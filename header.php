@@ -1,3 +1,21 @@
+<?php
+    // Determine the current page filename (e.g., 'index.php', 'about.php')
+    // This allows the script to apply highlighting dynamically.
+    $current_page = basename($_SERVER['PHP_SELF']);
+    
+    /**
+     * Checks if the given page link matches the current page and returns 
+     * the appropriate Tailwind classes for active or inactive state.
+     */
+    function is_active($page, $current) {
+        if ($page === $current) {
+            // Active classes: Red text, bold font, and a bottom border
+            return 'text-red-500 font-extrabold border-b-2 border-red-500'; 
+        }
+        // Inactive classes: Gray text, hover effect, transparent border for alignment
+        return 'text-gray-300 hover:text-red-500 border-b-2 border-transparent';
+    }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -89,15 +107,33 @@
                 </div>
 
                 <!-- Center: Desktop Navigation (Hidden on Mobile) -->
-                <nav class="hidden lg:flex lg:space-x-8 xl:space-x-10">
-                    <a href="#" class="text-gray-300 hover:text-white font-medium nav-link">Home</a>
-                    <a href="#" class="text-gray-300 hover:text-white font-medium nav-link">About</a>
-                    <a href="#" class="text-gray-300 hover:text-white font-medium nav-link">Emergency Hotlines</a>
-                    <a href="#" class="text-gray-300 hover:text-white font-medium nav-link">Disaster Guides</a>
-                    <a href="#" class="text-gray-300 hover:text-white font-medium nav-link">
-                        <i class="fa-solid fa-phone-volume mr-1"></i> Contact
-                    </a>
-                </nav>
+                <div class="hidden sm:ml-6 sm:flex sm:space-x-8 h-full items-center">
+                        <!-- Home Link -->
+                        <a href="index.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                            <?php echo is_active('index.php', $current_page); ?>">
+                            Home
+                        </a>
+                        <!-- About Us Link -->
+                        <a href="about.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                            <?php echo is_active('about.php', $current_page); ?>">
+                            About Us
+                        </a>
+                        <!-- Disaster Guides Link -->
+                        <a href="guides.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                            <?php echo is_active('guides.php', $current_page); ?>">
+                            Disaster Guides
+                        </a>
+                        <!-- Emergency Hotlines Link -->
+                        <a href="hotlines.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                            <?php echo is_active('hotlines.php', $current_page); ?>">
+                            Emergency Hotlines
+                        </a>
+
+                         <a href="contact.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                            <?php echo is_active('contact.php', $current_page); ?>">
+                            Contact
+                        </a>
+                    </div>
 
                 <!-- Right Side: Action Buttons (Hidden on Mobile) - FIXED SIZES -->
                 <div class="hidden lg:flex items-center space-x-4">
@@ -110,11 +146,42 @@
                 </div>
 
                 <!-- Mobile Menu Button (Hamburger) -->
-                <div class="lg:hidden">
-                    <button id="menu-toggle" class="text-gray-300 hover:text-red-500 focus:outline-none transition duration-300 p-2 rounded-md">
-                        <i class="fa-solid fa-bars text-2xl"></i>
+                <div class="sm:hidden" id="mobile-menu">
+            <div class="pt-2 pb-3 space-y-1 px-2">
+                <!-- Mobile Links use the same active logic -->
+                <a href="index.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('index.php', $current_page); ?>">
+                    Home
+                </a>
+                <a href="about.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('about.php', $current_page); ?>">
+                    About Us
+                </a>
+                <a href="guides.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('guides.php', $current_page); ?>">
+                    Disaster Guides
+                </a>
+                <a href="hotlines.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('hotlines.php', $current_page); ?>">
+                    Emergency Hotlines
+                </a>
+
+                <a href="contact.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('contact.php', $current_page); ?>">
+                    Contact
+                </a>
+                
+                <!-- Mobile Auth Buttons -->
+                <div class="pt-2 border-t border-gray-700 space-y-2">
+                    <button class="w-full text-left px-3 py-2 text-base font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-150">
+                        <i class="fa-solid fa-user-plus mr-2"></i> Sign Up
+                    </button>
+                    <button class="w-full text-left px-3 py-2 text-base font-medium text-red-500 border border-red-500 rounded-lg hover:bg-red-500 hover:text-white transition duration-150">
+                        <i class="fa-solid fa-right-to-bracket mr-2"></i> Log In
                     </button>
                 </div>
+            </div>
+        </div>
 
             </div>
         </div>
@@ -126,6 +193,7 @@
                 <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-red-500 transition duration-200">About</a>
                 <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-red-500 transition duration-200">Emergency Hotlines</a>
                 <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-red-500 transition duration-200">Disaster Guides</a>
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-red-500 transition duration-200">Contact</a> 
                 <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-red-500 transition duration-200">
                     <i class="fa-solid fa-phone-volume mr-2"></i> Contact
                 </a>
@@ -144,7 +212,7 @@
     </header>
 
     <!-- Adding padding below the fixed header to show it clearly -->
-    <div class="pt-24 h-screen bg-gray-900"></div>
+    <!-- <div class="pt-24 h-screen bg-gray-900"></div> -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
