@@ -53,7 +53,11 @@
             border-radius: inherit;
         }
     </style>
-
+<!DOCTYPE html>
+<html>
+    <body>
+        
+    
     <!-- 1️⃣ Hero Section -->
     <!-- min-h-screen ensures full viewport height -->
     <section class="hero-background min-h-screen flex items-center justify-center text-center py-20 rounded-xl shadow-2xl">
@@ -214,11 +218,11 @@
             <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                  <!-- Sign Up (Primary/White) -->
                 <button class="w-full sm:w-auto px-8 py-4 bg-white text-red-700 font-bold rounded-lg shadow-xl uppercase text-lg hover:bg-gray-100 transform hover:scale-[1.02] transition duration-300">
-                    Sign Up Now
+                    <a href="signup.php">Sign Up Now</a>
                 </button>
                 <!-- Login (Secondary/Outlined) -->
                 <button class="w-full sm:w-auto px-8 py-4 text-white font-semibold border-2 border-white rounded-lg bg-transparent hover:bg-white/20 transition duration-300 uppercase text-lg">
-                    Login
+                    <a href="login.php">Login</a>
                 </button>
             </div>
         </div><br><br>
@@ -288,6 +292,9 @@
         });
     });
 </script>
+
+    </body>
+</html>
 
 <?php 
     // This loads the footer markup, the final closing body, and html tags

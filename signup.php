@@ -36,368 +36,395 @@
         $confirmPassword = $_POST['confirmPassword'] ?? '';
         $termsAgreed = $formData['termsAgreed'] === 'on';
 
-        // 2. Validate Input
-        if (empty($firstName) || empty($lastName) || empty($email) || empty($contactNumber) || empty($houseStreetSubd) || empty($barangay) || empty($password) || empty($confirmPassword)) {
-            $message = 'Please fill out all required fields.';
-            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $message = 'Invalid email format.';
-            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-        } elseif ($password !== $confirmPassword) {
-            $message = 'Passwords do not match.';
-            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-        } elseif (strlen($password) < 8) {
-            $message = 'Password must be at least 8 characters long.';
-            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-        } elseif (!$termsAgreed) {
-            $message = 'You must agree to the Terms and Conditions.';
-            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-        } else {
-            // 3. Successful Registration (Placeholder)
-            // In a real application, you would hash the password and save the user data to a database.
-            
-            $message = 'Registration successful! Redirecting to login...';
+        // 2. Simple Validation Checks
+        $errors = [];
+        if (empty($firstName) || empty($lastName) || empty($email) || empty($contactNumber) || empty($houseStreetSubd) || empty($barangay)) {
+            $errors[] = "Please fill out all required personal and address fields.";
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Please enter a valid email address.";
+        }
+        if (strlen($contactNumber) < 10) {
+            $errors[] = "Contact number must be at least 10 digits long.";
+        }
+        if (!in_array($barangay, $barangays)) {
+            $errors[] = "Invalid Barangay selected.";
+        }
+        if (strlen($password) < 8) {
+            $errors[] = "Password must be at least 8 characters long.";
+        }
+        if ($password !== $confirmPassword) {
+            $errors[] = "Passwords do not match.";
+        }
+        if (!$termsAgreed) {
+            $errors[] = "You must agree to the Terms and Conditions.";
+        }
+
+
+        // 3. Process Result
+        if (empty($errors)) {
+            // --- In a real application, you would save the user data to a database here ---
+            // Example: $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            // Example: saveUserToDatabase($firstName, $lastName, $email, $hashedPassword, ...);
+            // --- End of database logic ---
+
+            $message = 'Success! Your account has been registered. You will be redirected in 3 seconds.';
             $status_class = 'bg-green-500/20 text-green-300 border-green-500';
             
-            // Redirect after 3 seconds
-            $redirect_script = '<script>setTimeout(() => { window.location.href = "login.php"; }, 3000);</script>';
+            // Script for redirection after success
+            $redirect_script = 'setTimeout(() => { window.location.href = "index.php"; }, 3000);';
             
             // Clear form data on success
-            $formData = [
-                'firstName' => '', 'middleName' => '', 'lastName' => '', 'email' => '', 
-                'contactNumber' => '', 'houseStreetSubd' => '', 'barangay' => '', 'termsAgreed' => 'off',
-            ];
+            $formData = array_fill_keys(array_keys($formData), '');
+            $formData['termsAgreed'] = 'off';
+
+        } else {
+            $message = 'Registration Failed: ' . implode(' ', $errors);
+            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
+            // Do NOT clear formData so user can fix inputs
         }
     }
-    
-    // This loads the HTML head, opening body tag, fixed header, and mobile menu script
-    include 'header.php'; 
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeMati User Registration</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* Custom styles for the gradient button */
+        .btn-gradient {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover:not(:disabled) {
+            background: linear-gradient(135deg, #b91c1c, #991b1b);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .btn-gradient:disabled {
+            background: #4b5563; /* Gray background for disabled */
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        /* Style for the terms and conditions scrollable area */
+        .modal-body {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 font-sans antialiased text-gray-100">
 
-<!-- FIX: Main container ensures full screen height and centers content without causing page scroll -->
-<main class="flex items-center justify-center bg-gray-100 dark:bg-gray-900 w-auto" style="min-height: calc(100vh - 0px); padding-top: 80px;">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full max-w-4xl">
-        <!-- Registration Card -->
-        <!-- FIX: Set max height to prevent the card from exceeding the viewport size and force scroll INSIDE the card -->
-        <!-- <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-6 sm:p-10 border border-red-500/30 overflow-y-auto max-h-[calc(100vh-80px)] mx-auto"> -->
+    <!-- Main Registration Container -->
+    <!-- Removed pt-24 and used py-12 for generic vertical padding, ensured centering, and full viewport height -->
+    <div class="py-12 px-4 min-h-screen flex items-center justify-center">
+        <!-- Form Card Container - Increased width to max-w-4xl for a wider form -->
+        <div id="signup-form-card" class="max-w-9xl w-full p-6 sm:p-10 space-y-8 bg-gray-800 rounded-xl shadow-2xl relative mx-auto">
             
-            <h1 class="text-3xl font-extrabold text-red-600 dark:text-red-400 mb-2 text-center">
-                Create Your SafeMati Account
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 mb-8 text-center">
-                Register now to receive critical real-time emergency alerts.
-            </p>
+            <h1 class="text-4xl font-extrabold text-red-500 text-center">SafeMati Registration</h1>
+            <p class="text-center text-gray-400">Join us to receive real-time disaster and safety alerts for Mati City.</p>
 
+            <!-- Status/Message Alert -->
             <?php if ($message): ?>
-                <!-- Status Message Display -->
-                <div id="status-message" class="p-4 mb-6 rounded-lg border-2 <?= $status_class; ?> text-center font-semibold transition-all duration-300">
-                    <?= $message; ?>
+                <div id="status-message" class="p-4 rounded-lg border-l-4 font-semibold text-center <?= htmlspecialchars($status_class) ?>" role="alert">
+                    <p><?= htmlspecialchars($message) ?></p>
                 </div>
             <?php endif; ?>
 
-            <form action="signup.php" method="POST" id="registrationForm" class="space-y-6">
-                <!-- 1. PERSONAL DETAILS -->
-                <div>
-                    <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4 border-b pb-2 border-gray-200">Personal Details</h2>
-                    <!-- Grid layout for name fields to ensure alignment -->
+            <form method="POST" id="signup-form" class="space-y-6">
+
+                <!-- Section 1: Personal Information -->
+                <fieldset class="border border-gray-700 p-4 rounded-lg">
+                    <legend class="text-red-400 px-2 text-lg font-semibold">Personal Information</legend>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- First Name -->
-                        <div class="col-span-1">
-                            <label for="firstName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">First Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="firstName" name="firstName" value="<?= $formData['firstName']; ?>" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm"
+                        <div>
+                            <label for="firstName" class="block text-sm font-medium text-gray-300 mb-2">First Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="firstName" name="firstName" required value="<?= htmlspecialchars($formData['firstName']) ?>"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
                                 placeholder="Juan">
                         </div>
-                        <!-- Middle Name (Optional) -->
-                        <div class="col-span-1">
-                            <label for="middleName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Middle Name</label>
-                            <input type="text" id="middleName" name="middleName" value="<?= $formData['middleName']; ?>"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm"
-                                placeholder="Dela">
+                        <div>
+                            <label for="middleName" class="block text-sm font-medium text-gray-300 mb-2">Middle Name</label>
+                            <input type="text" id="middleName" name="middleName" value="<?= htmlspecialchars($formData['middleName']) ?>"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
+                                placeholder="Dela Cruz">
                         </div>
-                        <!-- Last Name -->
-                        <div class="col-span-1">
-                            <label for="lastName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="lastName" name="lastName" value="<?= $formData['lastName']; ?>" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm"
-                                placeholder="Cruz">
+                        <div>
+                            <label for="lastName" class="block text-sm font-medium text-gray-300 mb-2">Last Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="lastName" name="lastName" required value="<?= htmlspecialchars($formData['lastName']) ?>"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
+                                placeholder="Tamad">
                         </div>
                     </div>
-                </div>
+                </fieldset>
 
-                <!-- 2. CONTACT AND CREDENTIALS -->
-                <div>
-                    <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4 border-b pb-2 border-gray-200">Contact & Security</h2>
-                    <!-- Grid layout for contact fields -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <!-- Email -->
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address <span class="text-red-500">*</span></label>
-                            <input type="email" id="email" name="email" value="<?= $formData['email']; ?>" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm"
-                                placeholder="juan.delacruz@example.com">
-                        </div>
-                        <!-- Contact Number -->
-                        <div>
-                            <label for="contactNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Number <span class="text-red-500">*</span></label>
-                            <input type="tel" id="contactNumber" name="contactNumber" value="<?= $formData['contactNumber']; ?>" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm"
-                                placeholder="09xxxxxxxxx">
-                        </div>
-                    </div>
-                    
-                    <!-- Grid layout for password fields -->
+                <!-- Section 2: Contact Information -->
+                <fieldset class="border border-gray-700 p-4 rounded-lg">
+                    <legend class="text-red-400 px-2 text-lg font-semibold">Contact Details</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Password -->
                         <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password (min 8 chars) <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="password" id="password" name="password" required minlength="8"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm pr-10"
-                                    placeholder="••••••••">
-                                <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-red-500 transition duration-150">
-                                    <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
-                                </button>
-                            </div>
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address <span class="text-red-500">*</span></label>
+                            <input type="email" id="email" name="email" required value="<?= htmlspecialchars($formData['email']) ?>"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
+                                placeholder="juan@example.com">
                         </div>
-                        <!-- Confirm Password -->
                         <div>
-                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm pr-10"
-                                    placeholder="••••••••">
-                                <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-red-500 transition duration-150">
-                                    <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
-                                </button>
-                            </div>
+                            <label for="contactNumber" class="block text-sm font-medium text-gray-300 mb-2">Contact Number <span class="text-red-500">*</span></label>
+                            <input type="tel" id="contactNumber" name="contactNumber" required value="<?= htmlspecialchars($formData['contactNumber']) ?>"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
+                                placeholder="09XX-XXX-XXXX" pattern="[0-9]{10,11}">
                         </div>
                     </div>
-                </div>
+                </fieldset>
 
-                <!-- 3. ADDRESS DETAILS -->
-                <div>
-                    <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4 border-b pb-2 border-gray-200">Residential Address (Mati City)</h2>
-                    <!-- Grid layout for address fields -->
+                <!-- Section 3: Residential Address (Mati City Only) -->
+                <fieldset class="border border-gray-700 p-4 rounded-lg">
+                    <legend class="text-red-400 px-2 text-lg font-semibold">Residential Address</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- House/Street/Subd. -->
                         <div>
-                            <label for="houseStreetSubd" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">House No. / Street / Subd. <span class="text-red-500">*</span></label>
-                            <input type="text" id="houseStreetSubd" name="houseStreetSubd" value="<?= $formData['houseStreetSubd']; ?>" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm"
-                                placeholder="Unit 101, Sunflower St.">
-                        </div>
-                        <!-- Barangay -->
-                        <div>
-                            <label for="barangay" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Barangay <span class="text-red-500">*</span></label>
+                            <label for="barangay" class="block text-sm font-medium text-gray-300 mb-2">Barangay <span class="text-red-500">*</span></label>
                             <select id="barangay" name="barangay" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition duration-150 shadow-sm">
-                                <option value="">Select Barangay</option>
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm appearance-none">
+                                <option value="">Select your Barangay</option>
                                 <?php foreach ($barangays as $b): ?>
-                                    <option value="<?= $b; ?>" <?= $formData['barangay'] === $b ? 'selected' : ''; ?>>
-                                        <?= $b; ?>
+                                    <option value="<?= htmlspecialchars($b) ?>" <?= $formData['barangay'] === $b ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($b) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div>
+                            <label for="houseStreetSubd" class="block text-sm font-medium text-gray-300 mb-2">House No./Street/Subdivision <span class="text-red-500">*</span></label>
+                            <input type="text" id="houseStreetSubd" name="houseStreetSubd" required value="<?= htmlspecialchars($formData['houseStreetSubd']) ?>"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
+                                placeholder="24 Mahogany Street">
+                        </div>
                     </div>
-                </div>
+                </fieldset>
+                
+                <!-- Section 4: Account Credentials -->
+                <fieldset class="border border-gray-700 p-4 rounded-lg">
+                    <legend class="text-red-400 px-2 text-lg font-semibold">Account Credentials</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="relative">
+                            <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password (min. 8 characters) <span class="text-red-500">*</span></label>
+                            <input type="password" id="password" name="password" required minlength="8"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm pr-10"
+                                placeholder="********">
+                            <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 top-6 pt-1 flex items-center pr-3 text-gray-400 hover:text-red-400">
+                                <i class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">Confirm Password <span class="text-red-500">*</span></label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8"
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm pr-10"
+                                placeholder="********">
+                            <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 right-0 top-6 pt-1 flex items-center pr-3 text-gray-400 hover:text-red-400">
+                                <i class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </fieldset>
 
-                <!-- 4. TERMS AND SUBMIT -->
-                <div class="pt-4">
+                <!-- Terms and Conditions & Submit -->
+                <div class="space-y-6 pt-4">
                     <div class="flex items-start">
                         <div class="flex items-center h-5">
-                            <input id="termsAgreed" name="termsAgreed" type="checkbox" 
-                                <?= $formData['termsAgreed'] === 'on' ? 'checked' : ''; ?>
-                                class="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600"
-                                onchange="checkFormValidity()">
+                            <input id="termsAgreed" name="termsAgreed" type="checkbox"
+                                class="h-4 w-4 text-red-600 bg-gray-700 border-gray-600 rounded focus:ring-red-500"
+                                <?= $formData['termsAgreed'] === 'on' ? 'checked' : '' ?>>
                         </div>
                         <div class="ml-3 text-sm">
-                            <label for="termsAgreed" class="font-medium text-gray-700 dark:text-gray-300">
-                                I agree to the 
-                                <a href="#" id="openTermsModal" class="text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300 font-semibold underline transition duration-150">
+                            <label for="termsAgreed" class="font-medium text-gray-300">
+                                I agree to the
+                                <a href="#" id="openTermsModal" class="text-red-400 hover:text-red-300 font-semibold underline transition duration-150 ease-in-out">
                                     Terms and Conditions
                                 </a> <span class="text-red-500">*</span>
                             </label>
                         </div>
                     </div>
+
+                    <button type="submit" id="submit-button" disabled
+                        class="btn-gradient w-full px-6 py-4 text-white font-bold rounded-lg text-lg shadow-xl uppercase transition duration-300">
+                        Register Account
+                    </button>
                 </div>
-
-                <button type="submit" id="submitButton" disabled
-                    class="btn-gradient w-full px-6 py-3 text-white font-bold rounded-lg shadow-xl uppercase tracking-wider text-lg transition duration-300 transform disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.005] hover:shadow-2xl">
-                    Register Account
-                </button>
-
-                <p class="text-center text-sm text-gray-600 dark:text-gray-400 pt-4">
-                    Already have an account? 
-                    <a href="login.php" class="text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300 font-semibold underline transition duration-150">
-                        Log in here
-                    </a>
-                </p>
-
             </form>
 
-        <!-- </div> -->
-    </div>
-</main>
-
-<!-- Terms and Conditions Modal -->
-<div id="termsModal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-75 flex items-center justify-center opacity-0 transition-opacity duration-300">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-3xl p-6 w-full max-w-2xl transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
-        <div class="flex justify-between items-center border-b pb-3 mb-4">
-            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Terms and Conditions</h3>
-            <button id="closeTermsModal" class="text-gray-400 hover:text-red-500 transition duration-150 p-2">
-                <i class="fa-solid fa-xmark text-2xl"></i>
-            </button>
-        </div>
-        <div class="overflow-y-auto text-gray-700 dark:text-gray-300 flex-grow pr-2 text-sm space-y-4">
-            <p class="font-bold text-base">1. Acceptance of Terms</p>
-            <p>By registering for a SafeMati account, you agree to be bound by these Terms and Conditions. This system is intended solely for residents of Mati City for the purpose of receiving emergency and safety alerts.</p>
-            
-            <p class="font-bold text-base">2. Purpose of Service</p>
-            <p>SafeMati provides a real-time alerting service for natural disasters, public safety announcements, and emergency information issued by the Mati City Disaster Risk Reduction and Management Office (MDRRMO) and its partner agencies. The service is supplemental and should not replace primary emergency response methods (e.g., dialing 911).</p>
-            
-            <p class="font-bold text-base">3. User Responsibility</p>
-            <ul class="list-disc list-inside space-y-1 pl-4">
-                <li>You must provide accurate and up-to-date residential and contact information.</li>
-                <li>You are responsible for maintaining the confidentiality of your account password.</li>
-                <li>Misuse of the system for non-emergency purposes is strictly prohibited and may result in account termination.</li>
-            </ul>
-            
-            <p class="font-bold text-base">4. Data Privacy</p>
-            <p>All personal data collected is for emergency notification and local government purposes only. Data will not be shared with third parties for commercial use. By agreeing, you consent to the processing of your data in accordance with the Philippine Data Privacy Act of 2012.</p>
-
-            <p class="font-bold text-base">5. Service Availability</p>
-            <p>The MDRRMO strives to ensure the service is available at all times, but cannot guarantee uninterrupted access. Service disruptions may occur due to maintenance, network issues, or extreme weather conditions.</p>
-        </div>
-        <div class="mt-4 pt-3 border-t">
-            <button id="closeTermsModalFooter" class="btn-gradient w-full px-4 py-2 text-white font-bold rounded-lg uppercase tracking-wider transition duration-300">
-                Close and Agree
-            </button>
+            <p class="mt-8 text-center text-gray-400 text-sm">
+                Already have an account? <a href="login.php" class="text-red-400 hover:text-red-300 font-semibold transition duration-150 ease-in-out">Log In here</a>.
+            </p>
         </div>
     </div>
-</div>
 
-<?= $redirect_script; ?>
+
+    <!-- Terms and Conditions Modal (Hidden by default) -->
+    <div id="terms-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-70 transition-opacity duration-300 opacity-0" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <!-- Modal Content Card -->
+            <div class="bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 scale-95 sm:my-8 sm:w-full sm:max-w-4xl w-full">
+                <div class="bg-gray-800 px-6 py-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-gray-700">
+                        <h3 class="text-2xl leading-6 font-extrabold text-red-400" id="modal-title">
+                            Terms and Conditions for SafeMati
+                        </h3>
+                        <button type="button" id="closeTermsModal" class="text-gray-400 hover:text-red-500 focus:outline-none transition-colors">
+                            <i class="fa-solid fa-xmark text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body mt-4 text-gray-300 space-y-4">
+                        <p class="text-sm">Welcome to SafeMati. By creating an account, you agree to the following terms and conditions:</p>
+                        
+                        <h4 class="text-lg font-semibold text-red-300">1. Purpose of Service</h4>
+                        <p>SafeMati is a public safety alert system for the residents of Mati City, Davao Oriental. Its primary function is to disseminate real-time warnings, advisories, and post-disaster information related to natural and human-made hazards. This service is intended to supplement official government communication channels and should not be relied upon as the sole source of emergency information.</p>
+
+                        <h4 class="text-lg font-semibold text-red-300">2. User Responsibilities</h4>
+                        <ul class="list-disc list-inside space-y-2 pl-4 text-sm">
+                            <li>**Accurate Information:** You must provide accurate and truthful personal and residential information, including your full name, contact details, and current barangay address within Mati City.</li>
+                            <li>**Security:** You are responsible for maintaining the confidentiality of your account password and for all activities that occur under your account.</li>
+                            <li>**Emergency Preparedness:** You acknowledge that this system is a notification tool and does not replace personal emergency preparedness, evacuation planning, or adherence to official disaster response protocols.</li>
+                        </ul>
+
+                        <h4 class="text-lg font-semibold text-red-300">3. Data Privacy and Use</h4>
+                        <p>Your personal data is collected solely for the purpose of geographically targeted alert dissemination and disaster management record-keeping by the City Disaster Risk Reduction and Management Office (CDRRMO) of Mati City. Your data will not be shared with third parties for marketing purposes. By agreeing, you consent to the processing of your data in accordance with the Philippine Data Privacy Act of 2012.</p>
+
+                        <h4 class="text-lg font-semibold text-red-300">4. Limitation of Liability</h4>
+                        <p>The City Government of Mati and its affiliated agencies (SafeMati) are not liable for any direct, indirect, incidental, or consequential damages resulting from the use or inability to use the service, including but not limited to, delays in or failures of alert transmission, or reliance on the information provided. While every effort is made to ensure accuracy, the nature of emergency reporting means information may sometimes be delayed or incomplete.</p>
+
+                        <h4 class="text-lg font-semibold text-red-300">5. Service Availability</h4>
+                        <p>The SafeMati service may be subject to limitations, delays, and other problems inherent in the use of the internet and electronic communications. We do not warrant that the service will be uninterrupted or error-free.</p>
+                        
+                        <p class="text-sm italic pt-4">By clicking 'Accept and Close', you confirm that you have read, understood, and agree to be bound by these Terms and Conditions.</p>
+                    </div>
+                </div>
+                <div class="bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="closeTermsModalFooter"
+                        class="btn-gradient w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-bold text-white uppercase sm:ml-3 sm:w-auto sm:text-sm transform hover:scale-[1.01] transition duration-300">
+                        Accept and Close
+                    </button>
+                    <button type="button" id="cancelTermsModal"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-gray-200 hover:bg-gray-500 sm:mt-0 sm:w-auto sm:text-sm transition duration-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 <script>
+    // --- Server-side redirect script (only runs on successful submission) ---
+    <?= $redirect_script ?>
+    // -----------------------------------------------------------------------
+
     document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('registrationForm');
-        const submitButton = document.getElementById('submitButton');
+        const form = document.getElementById('signup-form');
+        const submitButton = document.getElementById('submit-button');
         const termsCheckbox = document.getElementById('termsAgreed');
-        const requiredFields = form.querySelectorAll('input[required], select[required]');
         
-        const termsModal = document.getElementById('termsModal');
+        // Modal elements
+        const termsModal = document.getElementById('terms-modal');
         const openTermsModal = document.getElementById('openTermsModal');
         const closeTermsModal = document.getElementById('closeTermsModal');
         const closeTermsModalFooter = document.getElementById('closeTermsModalFooter');
+        const cancelTermsModal = document.getElementById('cancelTermsModal');
 
-        // --- 1. Form Validation and Submit Button State ---
 
-        // Checks if all required fields are filled and terms are agreed
+        // --- 1. Form Validation and Button State ---
+
+        // Function to check if all required fields are filled and valid
         const checkFormValidity = () => {
-            let allRequiredFilled = true;
-            requiredFields.forEach(field => {
-                if (field.value.trim() === '') {
-                    allRequiredFilled = false;
+            let isFormValid = true;
+
+            // Check required personal/address fields
+            const requiredFields = ['firstName', 'lastName', 'email', 'contactNumber', 'houseStreetSubd', 'barangay', 'password', 'confirmPassword'];
+            requiredFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (!field || field.value.trim() === '') {
+                    isFormValid = false;
                 }
             });
+
+            // Check email format
+            const emailField = document.getElementById('email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailField && !emailRegex.test(emailField.value.trim())) {
+                isFormValid = false;
+            }
             
-            // Special check for select element default value
-            const barangaySelect = document.getElementById('barangay');
-            if (barangaySelect.value === '') {
-                allRequiredFilled = false;
+            // Check password match and minimum length
+            const passwordField = document.getElementById('password');
+            const confirmPasswordField = document.getElementById('confirmPassword');
+            if (passwordField && confirmPasswordField) {
+                if (passwordField.value.length < 8) {
+                    isFormValid = false;
+                }
+                if (passwordField.value !== confirmPasswordField.value) {
+                    isFormValid = false;
+                }
             }
 
-            // Enable or disable the submit button
-            if (allRequiredFilled && termsCheckbox.checked) {
-                submitButton.disabled = false;
-            } else {
-                submitButton.disabled = true;
+            // Check terms agreement
+            if (!termsCheckbox || !termsCheckbox.checked) {
+                isFormValid = false;
             }
+
+            // Update button state
+            submitButton.disabled = !isFormValid;
         };
-
-        // Attach event listeners to all required fields and the checkbox
-        requiredFields.forEach(field => {
+        
+        // Add listeners to all relevant inputs to check validity on change/input
+        form.querySelectorAll('input, select').forEach(field => {
             field.addEventListener('input', checkFormValidity);
         });
+
+        // Add listener for password change to update the match visual cue
+        document.getElementById('password').addEventListener('input', checkFormValidity);
+        document.getElementById('confirmPassword').addEventListener('input', checkFormValidity);
+
+        // Add listener for the terms checkbox
         termsCheckbox.addEventListener('change', checkFormValidity);
-
-
-        // --- 2. Client-Side Validation on Submit ---
-
+        
+        
+        // --- 2. Client-side Form Submission Handler ---
         form.addEventListener('submit', (e) => {
-            let isValid = true;
-
-            // Remove previous error highlights
-            requiredFields.forEach(field => {
-                field.classList.remove('border-red-500', 'ring-2', 'ring-red-500/50');
-            });
-            
-            // Check for empty required fields again
-            requiredFields.forEach(field => {
-                if (field.value.trim() === '' || (field.id === 'barangay' && field.value === '')) {
-                    field.classList.add('border-red-500', 'ring-2', 'ring-red-500/50');
-                    isValid = false;
-                }
-            });
-
-            // Password matching and length check
-            const password = document.getElementById('password');
-            const confirmPassword = document.getElementById('confirmPassword');
-            
-            if (password.value !== confirmPassword.value || password.value.length < 8) {
-                password.classList.add('border-red-500', 'ring-2', 'ring-red-500/50');
-                confirmPassword.classList.add('border-red-500', 'ring-2', 'ring-red-500/50');
-                isValid = false;
+            // Note: PHP handles the final submission logic on the server.
+            // This client-side code just adds a loading state.
+            if (!submitButton.disabled) {
+                submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processing...';
+                // The disabled state is already managed by checkFormValidity
             } else {
-                password.classList.remove('border-red-500', 'ring-2', 'ring-red-500/50');
-                confirmPassword.classList.remove('border-red-500', 'ring-2', 'ring-red-500/50');
+                 // In a real application, you'd show a custom error message box here.
+                 e.preventDefault();
+                 console.log("Form submission blocked due to invalid or incomplete data.");
             }
-            
-            // Basic email validation
-            const emailField = document.getElementById('email');
-            const emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
-            if (!emailRegex.test(emailField.value.trim())) {
-                 emailField.classList.add('border-red-500', 'ring-2', 'ring-red-500/50');
-                 isValid = false;
-            } else {
-                 emailField.classList.remove('border-red-500', 'ring-2', 'ring-red-500/50');
-            }
-
-
-            if (!isValid) {
-                e.preventDefault(); // Stop form submission if validation fails
-                // In a real app, show a toast/modal error message instead of just logging
-                console.error("Client-side validation failed. Please check the highlighted fields.");
-                // Prevent further server processing on the client
-            } 
-            // If isValid is true, the form submits, and PHP handles the final server-side result.
-        });
-
-        // Remove error classes when user starts typing/selecting
-        form.querySelectorAll('input, select').forEach(field => {
-            field.addEventListener('input', () => {
-                field.classList.remove('border-red-500', 'ring-2', 'ring-red-500/50');
-                checkFormValidity(); // Re-check button state
-            });
         });
 
 
         // --- 3. Password Toggle Functionality ---
-
-        const setupPasswordToggle = (inputId, buttonId) => {
+        const setupPasswordToggle = (inputId, toggleId) => {
             const input = document.getElementById(inputId);
-            const button = document.getElementById(buttonId);
-            const icon = button.querySelector('i');
+            const toggle = document.getElementById(toggleId);
+            
+            if (!input || !toggle) return;
 
-            button.addEventListener('click', () => {
-                if (input.type === 'password') {
-                    input.type = 'text';
+            toggle.addEventListener('click', () => {
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                
+                const icon = toggle.querySelector('i');
+                if (type === 'text') {
                     icon.classList.remove('fa-eye-slash');
                     icon.classList.add('fa-eye');
                 } else {
-                    input.type = 'password';
                     icon.classList.remove('fa-eye');
                     icon.classList.add('fa-eye-slash');
                 }
@@ -428,11 +455,18 @@
         });
 
         closeTermsModal.addEventListener('click', hideTermsModal);
+        
+        // Logic for 'Accept and Close'
         closeTermsModalFooter.addEventListener('click', () => {
             termsCheckbox.checked = true; // Mark checkbox as checked on acceptance
             checkFormValidity();
             hideTermsModal();
         });
+
+        // Logic for 'Cancel'
+        cancelTermsModal.addEventListener('click', hideTermsModal);
+
+        // Close modal when clicking outside
         termsModal.addEventListener('click', (e) => {
             if (e.target === termsModal) {
                 hideTermsModal();
@@ -445,7 +479,5 @@
     });
 </script>
 
-<?php 
-    // This loads the footer markup, the final closing body, and html tags
-    include 'footer.php'; 
-?>
+</body>
+</html>

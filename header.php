@@ -137,12 +137,16 @@
 
                 <!-- Right Side: Action Buttons (Hidden on Mobile) - FIXED SIZES -->
                 <div class="hidden lg:flex items-center space-x-4">
-                    <button class="w-28 flex items-center justify-center px-4 py-2 text-white font-semibold rounded-lg bg-gray-800 border border-red-600 hover:bg-gray-700 transition duration-300">
+                    <a href="login.php" ><button class="w-28 flex items-center justify-center px-4 py-2 text-white font-semibold rounded-lg bg-gray-800 border border-red-600 hover:bg-gray-700 transition duration-300">
                         <i class="fa-solid fa-user mr-2"></i> Login
                     </button>
+                    </a>
+                    
+                    <a href="signup.php">
                     <button class="w-28 btn-gradient flex items-center justify-center px-4 py-3 text-white font-bold rounded-lg shadow-md uppercase text-sm">
                         Sign Up
                     </button>
+                    </a>
                 </div>
 
                 <!-- Mobile Menu Button (Hamburger) -->
