@@ -244,7 +244,7 @@
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <button class="w-full sm:w-auto px-8 py-4 bg-white text-red-700 font-bold rounded-lg shadow-xl uppercase text-lg hover:bg-gray-100 transform hover:scale-[1.02] transition duration-300">
-                        Sign Up Now
+                        <a href="signup.php">Sign Up Now</a>
                     </button>
                     <button class="w-full sm:w-auto px-8 py-4 bg-gray-900/50 text-white font-semibold border-2 border-white rounded-lg hover:bg-white/20 transition duration-300 uppercase text-lg">
                         Learn More

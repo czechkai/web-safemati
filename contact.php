@@ -2,41 +2,12 @@
     // This loads the HTML head, opening body tag, fixed header, and mobile menu script
     include 'header.php'; 
 
-    // --- Form Submission Logic (Placeholder) ---
-    $message = '';
-    $status_class = '';
-
-    // Initialize variables to hold submitted values (used to re-populate form on error)
-    $firstName = $_POST['firstName'] ?? '';
-    $lastName = $_POST['lastName'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $subject = $_POST['subject'] ?? '';
-    $messageBody = $_POST['message'] ?? '';
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // Simple PHP validation and sanitization placeholder
-        $firstName = htmlspecialchars($firstName);
-        $lastName = htmlspecialchars($lastName);
-        $email = filter_var($email, FILTER_SANITIZE_EMAIL);
-        $subject = htmlspecialchars($subject);
-        $messageBody = htmlspecialchars($messageBody);
-
-        // Basic checks (Note: Client-side JS handles most validation before this point)
-        if (empty($firstName) || empty($lastName) || empty($email) || empty($messageBody) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $message = 'Please fill out all required fields correctly.';
-            $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-        } else {
-            // --- In a real application, you would send an email here ---
-            // mail('admin@safemati.gov.ph', $subject, "From: $email\n\n$messageBody");
-            // --- End of email logic ---
-
-            $message = 'Thank you, ' . $firstName . '! Your message has been received. We will respond within 48 hours.';
-            $status_class = 'bg-green-500/20 text-green-300 border-green-500';
-
-            // Clear variables after successful submission
-            $firstName = $lastName = $email = $subject = $messageBody = '';
-        }
-    }
+    // Initialize variables for form fields (client-side and AJAX handle submission)
+    $firstName = '';
+    $lastName = '';
+    $email = '';
+    $subject = '';
+    $messageBody = '';
 ?>
 
 <!-- Contact Hero Section -->
@@ -57,17 +28,12 @@
 <section class="py-16 bg-gray-900">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <?php if ($message): ?>
-        <!-- Alert Message Container -->
-        <div class="p-4 mb-8 rounded-lg border-l-4 shadow-lg <?php echo $status_class; ?>" role="alert">
-            <p class="text-sm font-semibold"><?php echo $message; ?></p>
-        </div>
-        <?php endif; ?>
+        <div id="alertContainer"></div>
 
         <div class="bg-gray-800 p-8 md:p-12 rounded-2xl shadow-2xl">
             <h2 class="text-2xl font-bold text-white mb-8 border-b border-gray-700 pb-4">Send Us a Message</h2>
             
-            <form id="contactForm" method="POST" action="contact.php" class="space-y-6">
+            <form id="contactForm" method="POST" action="contact_handler.php" class="space-y-6">
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- First Name -->
@@ -205,6 +171,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('contactForm');
         const submitButton = document.getElementById('submitButton');
+        const alertContainer = document.getElementById('alertContainer');
         
         // Define required fields (excluding email, which has special validation)
         const requiredTextFields = ['firstName', 'lastName', 'subject', 'message'];
@@ -247,18 +214,50 @@
                 displayError(emailField, '');
             }
 
-
             if (!isValid) {
                 e.preventDefault(); // Stop form submission if validation fails
                 console.log("Validation failed. Please check the highlighted fields.");
                 // Restore button state in case it was stuck on 'Sending...' from a previous failed attempt
                 submitButton.innerHTML = 'Send Message';
                 submitButton.disabled = false;
-            } else {
-                // If validation passes, display loading state
-                submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sending...';
-                submitButton.disabled = true;
+                return;
             }
+
+            // Prevent default and send via AJAX
+            e.preventDefault();
+            submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sending...';
+            submitButton.disabled = true;
+
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(json => {
+                alertContainer.innerHTML = '';
+                const div = document.createElement('div');
+                if (json.success) {
+                    div.className = 'p-4 mb-8 rounded-lg border-l-4 shadow-lg bg-green-500/20 text-green-300 border-green-500';
+                    div.role = 'alert';
+                    div.innerHTML = '<p class="text-sm font-semibold">' + (json.message || 'Message sent.') + '</p>';
+                    form.reset();
+                } else {
+                    div.className = 'p-4 mb-8 rounded-lg border-l-4 shadow-lg bg-red-500/20 text-red-300 border-red-500';
+                    div.role = 'alert';
+                    div.innerHTML = '<p class="text-sm font-semibold">' + (json.error || 'Error sending message.') + '</p>';
+                }
+                alertContainer.appendChild(div);
+            })
+            .catch(err => {
+                alertContainer.innerHTML = '<div class="p-4 mb-8 rounded-lg border-l-4 shadow-lg bg-red-500/20 text-red-300 border-red-500"><p class="text-sm font-semibold">Network error. Please try again.</p></div>';
+            })
+            .finally(() => {
+                submitButton.innerHTML = 'Send Message';
+                submitButton.disabled = false;
+            });
         });
 
         // 4. Live feedback: Remove error classes when user starts typing

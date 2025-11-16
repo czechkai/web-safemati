@@ -1,29 +1,35 @@
 <?php 
     include 'header.php'; 
 
-    // --- Hotline Data Structure ---
-    // This PHP array holds all the emergency contact data. 
-    // This array will be used to generate the initial HTML cards and is accessible by the JavaScript for filtering.
-    $hotlines = [
-        // Police
-        ['name' => 'Mati City Police Station', 'number' => '911', 'category' => 'Police', 'icon' => 'fa-shield-halved', 'color' => 'blue-500'],
-        ['name' => 'Mati Traffic Management', 'number' => '082-822-1234', 'category' => 'Police', 'icon' => 'fa-car-side', 'color' => 'blue-400'],
-        // Fire
-        ['name' => 'Bureau of Fire Protection - Mati', 'number' => '160', 'category' => 'Fire', 'icon' => 'fa-fire-extinguisher', 'color' => 'orange-500'],
-        // Medical
-        ['name' => 'Mati Doctors Hospital', 'number' => '082-823-5678', 'category' => 'Medical', 'icon' => 'fa-kit-medical', 'color' => 'red-500'],
-        ['name' => 'Provincial Health Office', 'number' => '082-823-8765', 'category' => 'Medical', 'icon' => 'fa-stethoscope', 'color' => 'red-400'],
-        // Rescue
-        ['name' => 'Mati CDRRMO (Disaster Office)', 'number' => '911', 'category' => 'Rescue', 'icon' => 'fa-life-ring', 'color' => 'green-500'],
-        ['name' => 'Philippine Coast Guard - Mati', 'number' => '082-821-1122', 'category' => 'Rescue', 'icon' => 'fa-anchor', 'color' => 'green-400'],
-        // Utilities
-        ['name' => 'Davao Oriental Electric Coop (DORECO)', 'number' => '082-824-9000', 'category' => 'Utilities', 'icon' => 'fa-bolt', 'color' => 'yellow-500'],
-        ['name' => 'Mati Water District (MWD)', 'number' => '082-825-1000', 'category' => 'Utilities', 'icon' => 'fa-faucet-drip', 'color' => 'sky-500'],
-        // LGU
-        ['name' => 'Mati City Hall Information Desk', 'number' => '082-820-2020', 'category' => 'LGU / City Offices', 'icon' => 'fa-city', 'color' => 'purple-500'],
-    ];
+    // Try loading hotlines from DB, fallback to inline array
+    $hotlines = [];
+    try {
+        require_once __DIR__ . '/db.php';
+        if (isset($pdo) && $pdo) {
+            $stmt = $pdo->query("SELECT name, phone, category, icon, color FROM hotlines WHERE is_active=1 ORDER BY sort_order, created_at DESC LIMIT 200");
+            $hotlines = $stmt->fetchAll();
+        }
+    } catch (Exception $e) {
+        // ignore, will fallback to static list
+    }
 
-    $categories = array_unique(array_column($hotlines, 'category'));
+    if (empty($hotlines)) {
+        $hotlines = [
+            ['name' => 'Mati City Police Station', 'phone' => '911', 'category' => 'Police', 'icon' => 'fa-shield-halved', 'color' => 'blue-500'],
+            ['name' => 'Mati Traffic Management', 'phone' => '082-822-1234', 'category' => 'Police', 'icon' => 'fa-car-side', 'color' => 'blue-400'],
+            ['name' => 'Bureau of Fire Protection - Mati', 'phone' => '160', 'category' => 'Fire', 'icon' => 'fa-fire-extinguisher', 'color' => 'orange-500'],
+            ['name' => 'Mati Doctors Hospital', 'phone' => '082-823-5678', 'category' => 'Medical', 'icon' => 'fa-kit-medical', 'color' => 'red-500'],
+            ['name' => 'Provincial Health Office', 'phone' => '082-823-8765', 'category' => 'Medical', 'icon' => 'fa-stethoscope', 'color' => 'red-400'],
+            ['name' => 'Mati CDRRMO (Disaster Office)', 'phone' => '911', 'category' => 'Rescue', 'icon' => 'fa-life-ring', 'color' => 'green-500'],
+            ['name' => 'Philippine Coast Guard - Mati', 'phone' => '082-821-1122', 'category' => 'Rescue', 'icon' => 'fa-anchor', 'color' => 'green-400'],
+            ['name' => 'Davao Oriental Electric Coop (DORECO)', 'phone' => '082-824-9000', 'category' => 'Utilities', 'icon' => 'fa-bolt', 'color' => 'yellow-500'],
+            ['name' => 'Mati Water District (MWD)', 'phone' => '082-825-1000', 'category' => 'Utilities', 'icon' => 'fa-faucet-drip', 'color' => 'sky-500'],
+            ['name' => 'Mati City Hall Information Desk', 'phone' => '082-820-2020', 'category' => 'LGU / City Offices', 'icon' => 'fa-city', 'color' => 'purple-500'],
+        ];
+    }
+
+    // Normalize categories
+    $categories = array_values(array_unique(array_map(function($h){ return $h['category'] ?? ''; }, $hotlines)));
 ?>
 
 <style>
@@ -113,7 +119,7 @@
                     foreach ($hotlines as $index => $line) {
                         $line_category = htmlspecialchars($line['category']);
                         $line_name = htmlspecialchars($line['name']);
-                        $line_number = htmlspecialchars($line['number']);
+                        $line_number = htmlspecialchars($line['phone'] ?? ($line['number'] ?? ''));
                         $line_icon = htmlspecialchars($line['icon']);
                         $line_color = htmlspecialchars($line['color']);
                 ?>
@@ -186,7 +192,7 @@
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <button class="w-full sm:w-auto px-8 py-4 bg-white text-red-700 font-bold rounded-lg shadow-xl uppercase text-lg hover:bg-gray-100 transform hover:scale-[1.02] transition duration-300">
-                        Sign Up Now
+                        <a href="signup.php">Sign Up Now</a>
                     </button>
                     <button class="w-full sm:w-auto px-8 py-4 bg-gray-900/50 text-white font-semibold border-2 border-white rounded-lg hover:bg-white/20 transition duration-300 uppercase text-lg">
                         Login

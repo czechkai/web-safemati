@@ -1,6 +1,8 @@
 <?php 
     // This loads the HTML head, opening body tag, fixed header, and mobile menu script
     include 'header.php'; 
+
+  
 ?>
 
     <!-- Inline styles for page-specific effects like the Hero background animation --><style>
@@ -196,7 +198,7 @@
             </div>
             
             <div class="text-center mt-10">
-                <a href="#" class="inline-flex items-center px-6 py-3 btn-gradient text-sm font-bold rounded-lg uppercase shadow-lg hover:shadow-red-500/50 transition duration-300">
+                <a href="guides.php" class="inline-flex items-center px-6 py-3 btn-gradient text-sm font-bold rounded-lg uppercase shadow-lg hover:shadow-red-500/50 transition duration-300">
                     Explore All Guides <i class="fa-solid fa-arrow-right ml-2"></i>
                 </a>
             </div>
@@ -218,7 +220,8 @@
             <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                  <!-- Sign Up (Primary/White) -->
                 <button class="w-full sm:w-auto px-8 py-4 bg-white text-red-700 font-bold rounded-lg shadow-xl uppercase text-lg hover:bg-gray-100 transform hover:scale-[1.02] transition duration-300">
-                    <a href="signup.php">Sign Up Now</a>
+                    <a href="signup.ph
+                    p">Sign Up Now</a>
                 </button>
                 <!-- Login (Secondary/Outlined) -->
                 <button class="w-full sm:w-auto px-8 py-4 text-white font-semibold border-2 border-white rounded-lg bg-transparent hover:bg-white/20 transition duration-300 uppercase text-lg">
