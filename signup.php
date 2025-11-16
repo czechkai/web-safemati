@@ -22,21 +22,37 @@
         'Badas', 'Dauan', 'Don Enrique Lopez', 'Matiao', 'Sambat', 'Tagabisa'
     ];
 
+    // Prepare local phone input value (without +63 or leading 0) for the UI
+    $contactLocal = '';
+    if (!empty($formData['contactNumber'])) {
+        $num = trim($formData['contactNumber']);
+        if (strpos($num, '+63') === 0) {
+            $contactLocal = preg_replace('/\D/', '', substr($num, 3));
+        } elseif (strpos($num, '0') === 0) {
+            $contactLocal = preg_replace('/\D/', '', substr($num, 1));
+        } else {
+            $contactLocal = preg_replace('/\D/', '', $num);
+            if (strlen($contactLocal) > 10) {
+                $contactLocal = substr($contactLocal, -10);
+            }
+        }
+    }
+
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 1. Sanitize and Collect Input
-        $firstName = htmlspecialchars(trim($formData['firstName']));
-        $middleName = htmlspecialchars(trim($formData['middleName']));
-        $lastName = htmlspecialchars(trim($formData['lastName']));
+        $firstName = trim($formData['firstName']);
+        $middleName = trim($formData['middleName']);
+        $lastName = trim($formData['lastName']);
         $email = filter_var($formData['email'], FILTER_SANITIZE_EMAIL);
-        $contactNumber = htmlspecialchars(trim($formData['contactNumber']));
-        $houseStreetSubd = htmlspecialchars(trim($formData['houseStreetSubd']));
-        $barangay = htmlspecialchars(trim($formData['barangay']));
+        $contactNumber = trim($formData['contactNumber']);
+        $houseStreetSubd = trim($formData['houseStreetSubd']);
+        $barangay = trim($formData['barangay']);
         $password = $_POST['password'] ?? '';
         $confirmPassword = $_POST['confirmPassword'] ?? '';
         $termsAgreed = $formData['termsAgreed'] === 'on';
 
-        // 2. Simple Validation Checks
+        // 2. Validation Checks (server-side)
         $errors = [];
         if (empty($firstName) || empty($lastName) || empty($email) || empty($contactNumber) || empty($houseStreetSubd) || empty($barangay)) {
             $errors[] = "Please fill out all required personal and address fields.";
@@ -44,14 +60,35 @@
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = "Please enter a valid email address.";
         }
-        if (strlen($contactNumber) < 10) {
-            $errors[] = "Contact number must be at least 10 digits long.";
+        // Normalize and validate Philippine mobile format. Accept formats like +63XXXXXXXXXX or 0XXXXXXXXXXX
+        $contactNumber = trim($contactNumber);
+        if (preg_match('/^0\d{10}$/', $contactNumber)) {
+            // Convert 0-prefixed local format to +63XXXXXXXXXX
+            $contactNumber = '+63' . substr($contactNumber, 1);
+        } elseif (preg_match('/^\+63\d{10}$/', $contactNumber)) {
+            // already in expected +63... format
+        } else {
+            // Allow if digits-only local 10-digit number was submitted (client may provide local part)
+            $digits = preg_replace('/\D/', '', $contactNumber);
+            if (preg_match('/^\d{10}$/', $digits)) {
+                $contactNumber = '+63' . $digits;
+            } else {
+                $errors[] = "Contact number must be in Philippine format (e.g. +639171234567).";
+            }
         }
         if (!in_array($barangay, $barangays)) {
             $errors[] = "Invalid Barangay selected.";
         }
+
+        // Password complexity: at least 8 chars, at least one digit, at least one symbol (non-alphanumeric). Uppercase not required.
         if (strlen($password) < 8) {
             $errors[] = "Password must be at least 8 characters long.";
+        }
+        if (!preg_match('/\d/', $password)) {
+            $errors[] = "Password must contain at least one digit.";
+        }
+        if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
+            $errors[] = "Password must contain at least one symbol (e.g. !@#$%).";
         }
         if ($password !== $confirmPassword) {
             $errors[] = "Passwords do not match.";
@@ -60,28 +97,63 @@
             $errors[] = "You must agree to the Terms and Conditions.";
         }
 
-
-        // 3. Process Result
+        // 3. If validations pass, save to DB
         if (empty($errors)) {
-            // --- In a real application, you would save the user data to a database here ---
-            // Example: $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            // Example: saveUserToDatabase($firstName, $lastName, $email, $hashedPassword, ...);
-            // --- End of database logic ---
+            require_once __DIR__ . '/db.php';
 
-            $message = 'Success! Your account has been registered. You will be redirected in 3 seconds.';
-            $status_class = 'bg-green-500/20 text-green-300 border-green-500';
-            
-            // Script for redirection after success
-            $redirect_script = 'setTimeout(() => { window.location.href = "index.php"; }, 3000);';
-            
-            // Clear form data on success
-            $formData = array_fill_keys(array_keys($formData), '');
-            $formData['termsAgreed'] = 'off';
+            try {
+                // Check duplicate email
+                $exists = false;
+                if (isset($pdo) && $pdo) {
+                    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+                    $stmt->execute([':email' => $email]);
+                    $exists = (bool)$stmt->fetch();
+                } else {
+                    $stmt = $conn->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+                    $stmt->bind_param('s', $email);
+                    $stmt->execute();
+                    $stmt->store_result();
+                    $exists = $stmt->num_rows > 0;
+                }
 
-        } else {
+                if ($exists) {
+                    $errors[] = 'An account with that email already exists.';
+                } else {
+                    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                    if (isset($pdo) && $pdo) {
+                        $insert = $pdo->prepare('INSERT INTO users (first_name,middle_name,last_name,email,contact_number,house_street_subd,barangay,password_hash) VALUES (:fn,:mn,:ln,:email,:contact,:house,:barangay,:ph)');
+                        $insert->execute([
+                            ':fn' => $firstName,
+                            ':mn' => $middleName,
+                            ':ln' => $lastName,
+                            ':email' => $email,
+                            ':contact' => $contactNumber,
+                            ':house' => $houseStreetSubd,
+                            ':barangay' => $barangay,
+                            ':ph' => $passwordHash
+                        ]);
+                    } else {
+                        $stmt = $conn->prepare('INSERT INTO users (first_name,middle_name,last_name,email,contact_number,house_street_subd,barangay,password_hash) VALUES (?,?,?,?,?,?,?,?)');
+                        $stmt->bind_param('ssssssss', $firstName, $middleName, $lastName, $email, $contactNumber, $houseStreetSubd, $barangay, $passwordHash);
+                        $stmt->execute();
+                    }
+
+                    $message = 'Success! Your account has been registered. You will be redirected to the login page in 3 seconds.';
+                    $status_class = 'bg-green-500/20 text-green-300 border-green-500';
+                    $redirect_script = 'setTimeout(() => { window.location.href = "login.php"; }, 3000);';
+                    // Clear form data on success
+                    $formData = array_fill_keys(array_keys($formData), '');
+                    $formData['termsAgreed'] = 'off';
+                }
+            } catch (Exception $e) {
+                error_log('Signup error: ' . $e->getMessage());
+                $errors[] = 'Server error while registering. Please try again later.';
+            }
+        }
+
+        if (!empty($errors)) {
             $message = 'Registration Failed: ' . implode(' ', $errors);
             $status_class = 'bg-red-500/20 text-red-300 border-red-500';
-            // Do NOT clear formData so user can fix inputs
         }
     }
 ?>
@@ -144,19 +216,19 @@
                     <legend class="text-red-400 px-2 text-lg font-semibold">Personal Information</legend>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <label for="firstName" class="block text-sm font-medium text-gray-300 mb-2">First Name <span class="text-red-500">*</span></label>
+                            <label for="firstName" class="block text-sm font-medium text-gray-300 mb-2">First Name <span class="required-asterisk text-red-500">*</span></label>
                             <input type="text" id="firstName" name="firstName" required value="<?= htmlspecialchars($formData['firstName']) ?>"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
                                 placeholder="Juan">
                         </div>
                         <div>
-                            <label for="middleName" class="block text-sm font-medium text-gray-300 mb-2">Middle Name</label>
+                            <label for="middleName" class="block text-sm font-medium text-gray-300 mb-2">Middle Name <span class="required-asterisk text-red-500 hidden">*</span></label>
                             <input type="text" id="middleName" name="middleName" value="<?= htmlspecialchars($formData['middleName']) ?>"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
                                 placeholder="Dela Cruz">
                         </div>
                         <div>
-                            <label for="lastName" class="block text-sm font-medium text-gray-300 mb-2">Last Name <span class="text-red-500">*</span></label>
+                            <label for="lastName" class="block text-sm font-medium text-gray-300 mb-2">Last Name <span class="required-asterisk text-red-500">*</span></label>
                             <input type="text" id="lastName" name="lastName" required value="<?= htmlspecialchars($formData['lastName']) ?>"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
                                 placeholder="Tamad">
@@ -169,16 +241,22 @@
                     <legend class="text-red-400 px-2 text-lg font-semibold">Contact Details</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address <span class="text-red-500">*</span></label>
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address <span class="required-asterisk text-red-500">*</span></label>
                             <input type="email" id="email" name="email" required value="<?= htmlspecialchars($formData['email']) ?>"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
                                 placeholder="juan@example.com">
+                            <p id="emailError" class="text-red-400 text-sm mt-2 hidden" aria-live="polite"></p>
                         </div>
                         <div>
-                            <label for="contactNumber" class="block text-sm font-medium text-gray-300 mb-2">Contact Number <span class="text-red-500">*</span></label>
-                            <input type="tel" id="contactNumber" name="contactNumber" required value="<?= htmlspecialchars($formData['contactNumber']) ?>"
-                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
-                                placeholder="09XX-XXX-XXXX" pattern="[0-9]{10,11}">
+                            <label for="contactNumberLocal" class="block text-sm font-medium text-gray-300 mb-2">Contact Number <span class="required-asterisk text-red-500">*</span></label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 rounded-l-lg bg-gray-700 text-gray-200 border border-r-0 border-gray-600">+63</span>
+                                <input type="tel" id="contactNumberLocal" inputmode="numeric" autocomplete="tel" pattern="\d{10}"
+                                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-r-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
+                                    placeholder="9XXXXXXXXX" value="<?= htmlspecialchars($contactLocal) ?>">
+                            </div>
+                            <input type="hidden" name="contactNumber" id="contactNumber" value="<?= htmlspecialchars($formData['contactNumber']) ?>">
+                            <p id="phoneError" class="text-red-400 text-sm mt-2 hidden" aria-live="polite"></p>
                         </div>
                     </div>
                 </fieldset>
@@ -188,19 +266,22 @@
                     <legend class="text-red-400 px-2 text-lg font-semibold">Residential Address</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="barangay" class="block text-sm font-medium text-gray-300 mb-2">Barangay <span class="text-red-500">*</span></label>
-                            <select id="barangay" name="barangay" required
-                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm appearance-none">
+                            <label for="barangay" class="block text-sm font-medium text-gray-300 mb-2">Barangay <span class="required-asterisk text-red-500">*</span></label>
+                            <div class="relative">
+                                <select id="barangay" name="barangay" required
+                                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm appearance-none pr-10">
                                 <option value="">Select your Barangay</option>
                                 <?php foreach ($barangays as $b): ?>
                                     <option value="<?= htmlspecialchars($b) ?>" <?= $formData['barangay'] === $b ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($b) ?>
                                     </option>
                                 <?php endforeach; ?>
-                            </select>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
                         </div>
                         <div>
-                            <label for="houseStreetSubd" class="block text-sm font-medium text-gray-300 mb-2">House No./Street/Subdivision <span class="text-red-500">*</span></label>
+                            <label for="houseStreetSubd" class="block text-sm font-medium text-gray-300 mb-2">House No./Street/Subdivision <span class="required-asterisk text-red-500">*</span></label>
                             <input type="text" id="houseStreetSubd" name="houseStreetSubd" required value="<?= htmlspecialchars($formData['houseStreetSubd']) ?>"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm"
                                 placeholder="24 Mahogany Street">
@@ -213,7 +294,7 @@
                     <legend class="text-red-400 px-2 text-lg font-semibold">Account Credentials</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="relative">
-                            <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password (min. 8 characters) <span class="text-red-500">*</span></label>
+                            <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password <span class="required-asterisk text-red-500">*</span></label>
                             <input type="password" id="password" name="password" required minlength="8"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm pr-10"
                                 placeholder="********">
@@ -222,7 +303,7 @@
                             </button>
                         </div>
                         <div class="relative">
-                            <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">Confirm Password <span class="text-red-500">*</span></label>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">Confirm Password <span class="required-asterisk text-red-500">*</span></label>
                             <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8"
                                 class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-red-500 focus:border-red-500 text-gray-200 shadow-sm pr-10"
                                 placeholder="********">
@@ -230,6 +311,17 @@
                                 <i class="fa-solid fa-eye-slash"></i>
                             </button>
                         </div>
+                    </div>
+                    <!-- Password Requirements & Match Indicator -->
+                    <div class="mt-3 text-sm text-gray-300">
+                        <!-- <ul class="space-y-1">
+                            <li id="pw-require-length" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> At least 8 characters</li>
+                            <li id="pw-require-digit" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> Contains a number</li>
+                            <li id="pw-require-symbol" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> Contains a symbol (e.g. !@#$%)</li>
+                            <li id="pw-match-status" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> Passwords match</li>
+                        </ul> -->
+                        <p id="passwordError" class="text-red-400 text-sm mt-2 hidden" aria-live="polite"></p>
+                        <p id="confirmStatus" class="text-sm mt-2 hidden" aria-live="polite"></p>
                     </div>
                 </fieldset>
 
@@ -325,101 +417,198 @@
     <?= $redirect_script ?>
     // -----------------------------------------------------------------------
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('signup-form');
-        const submitButton = document.getElementById('submit-button');
-        const termsCheckbox = document.getElementById('termsAgreed');
-        
-        // Modal elements
-        const termsModal = document.getElementById('terms-modal');
-        const openTermsModal = document.getElementById('openTermsModal');
-        const closeTermsModal = document.getElementById('closeTermsModal');
-        const closeTermsModalFooter = document.getElementById('closeTermsModalFooter');
-        const cancelTermsModal = document.getElementById('cancelTermsModal');
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('signup-form');
+            const submitButton = document.getElementById('submit-button');
+            const termsCheckbox = document.getElementById('termsAgreed');
+            
+            // Modal elements
+            const termsModal = document.getElementById('terms-modal');
+            const openTermsModal = document.getElementById('openTermsModal');
+            const closeTermsModal = document.getElementById('closeTermsModal');
+            const closeTermsModalFooter = document.getElementById('closeTermsModalFooter');
+            const cancelTermsModal = document.getElementById('cancelTermsModal');
 
+            // --- Track touched fields ---
+            const touchedFields = new Set();
+            form.querySelectorAll('input, select').forEach(field => {
+                field.addEventListener('input', () => {
+                    touchedFields.add(field.id);
+                    checkFormValidity();
+                });
+                field.addEventListener('blur', () => {
+                    touchedFields.add(field.id);
+                    checkFormValidity();
+                });
+            });
 
         // --- 1. Form Validation and Button State ---
-
-        // Function to check if all required fields are filled and valid
         const checkFormValidity = () => {
             let isFormValid = true;
 
-            // Check required personal/address fields
-            const requiredFields = ['firstName', 'lastName', 'email', 'contactNumber', 'houseStreetSubd', 'barangay', 'password', 'confirmPassword'];
+            // Required fields
+            const requiredFields = ['firstName', 'lastName', 'email', 'contactNumberLocal', 'houseStreetSubd', 'barangay', 'password', 'confirmPassword'];
+
+            // Toggle asterisk visibility
+            const updateAsterisk = (id) => {
+                const field = document.getElementById(id);
+                const asterisk = document.querySelector(`label[for="${id}"] .required-asterisk`);
+                if (!asterisk) return;
+                if (field && field.value.trim() !== '') {
+                    asterisk.classList.add('hidden');
+                } else {
+                    asterisk.classList.remove('hidden');
+                }
+            };
             requiredFields.forEach(id => {
                 const field = document.getElementById(id);
-                if (!field || field.value.trim() === '') {
-                    isFormValid = false;
-                }
+                if (!field || field.value.trim() === '') isFormValid = false;
+                updateAsterisk(id);
             });
 
-            // Check email format
+            // Email validation (only show error if user interacted)
             const emailField = document.getElementById('email');
+            const emailError = document.getElementById('emailError');
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (emailField && !emailRegex.test(emailField.value.trim())) {
-                isFormValid = false;
+            if (emailField) {
+                const emailVal = emailField.value.trim();
+                if (emailVal && !emailRegex.test(emailVal)) {
+                    isFormValid = false;
+                    if (touchedFields.has('email')) {
+                        emailError.textContent = 'Please enter a valid email address (e.g. name@example.com).';
+                        emailError.classList.remove('hidden');
+                    }
+                } else {
+                    if (emailError) emailError.classList.add('hidden');
+                }
             }
-            
-            // Check password match and minimum length
+
+            // Password and confirm password
             const passwordField = document.getElementById('password');
             const confirmPasswordField = document.getElementById('confirmPassword');
+            const contactLocalField = document.getElementById('contactNumberLocal');
+            const hiddenPhoneField = document.getElementById('contactNumber');
+            const phoneError = document.getElementById('phoneError');
+            const passwordError = document.getElementById('passwordError');
+            const confirmStatus = document.getElementById('confirmStatus');
+
+            let hasLength = false, hasDigit = false, hasSymbol = false, isMatch = false;
             if (passwordField && confirmPasswordField) {
-                if (passwordField.value.length < 8) {
-                    isFormValid = false;
+                const pw = passwordField.value;
+                hasLength = pw.length >= 8;
+                hasDigit = /\d/.test(pw);
+                hasSymbol = /[^a-zA-Z0-9]/.test(pw);
+                isMatch = pw === confirmPasswordField.value && pw.length > 0;
+
+                if (!hasLength || !hasDigit || !hasSymbol) isFormValid = false;
+                if (!isMatch) isFormValid = false;
+
+                // Password error only after user typed
+                if (touchedFields.has('password')) {
+                    if (pw.length === 0) {
+                        passwordError.classList.add('hidden');
+                    } else if (!hasLength) {
+                        passwordError.textContent = 'Password must be at least 8 characters.';
+                        passwordError.classList.remove('hidden');
+                    } else if (!hasDigit) {
+                        passwordError.textContent = 'Password must contain at least one number.';
+                        passwordError.classList.remove('hidden');
+                    } else if (!hasSymbol) {
+                        passwordError.textContent = 'Password must contain at least one symbol (e.g., !@#$%).';
+                        passwordError.classList.remove('hidden');
+                    } else {
+                        passwordError.classList.add('hidden');
+                    }
                 }
-                if (passwordField.value !== confirmPasswordField.value) {
-                    isFormValid = false;
+
+                // Confirm password error only after user typed
+                if (touchedFields.has('confirmPassword')) {
+                    if (confirmPasswordField.value.length === 0) {
+                        confirmStatus.classList.add('hidden');
+                        confirmPasswordField.classList.remove('border-red-500','ring-2','ring-red-500','border-green-500','ring-green-500');
+                    } else if (isMatch) {
+                        confirmStatus.textContent = 'Passwords match';
+                        confirmStatus.classList.remove('hidden');
+                        confirmStatus.classList.remove('text-red-400');
+                        confirmStatus.classList.add('text-green-300');
+                        confirmPasswordField.classList.remove('border-red-500','ring-2','ring-red-500');
+                        confirmPasswordField.classList.add('border-green-500','ring-2','ring-green-500');
+                    } else {
+                        confirmStatus.textContent = 'Passwords do not match';
+                        confirmStatus.classList.remove('hidden');
+                        confirmStatus.classList.remove('text-green-300');
+                        confirmStatus.classList.add('text-red-400');
+                        confirmPasswordField.classList.remove('border-green-500','ring-2','ring-green-500');
+                        confirmPasswordField.classList.add('border-red-500','ring-2','ring-red-500');
+                    }
+                }
+
+                // Password field border styling
+                if (hasLength && hasDigit && hasSymbol) {
+                    passwordField.classList.remove('border-red-500','ring-2','ring-red-500');
+                    passwordField.classList.add('border-green-500','ring-2','ring-green-500');
+                } else {
+                    passwordField.classList.remove('border-green-500','ring-2','ring-green-500');
+                    if (passwordField.value.length > 0) {
+                        passwordField.classList.add('border-red-500','ring-2','ring-red-500');
+                    } else {
+                        passwordField.classList.remove('border-red-500','ring-2','ring-red-500');
+                    }
                 }
             }
 
-            // Check terms agreement
-            if (!termsCheckbox || !termsCheckbox.checked) {
-                isFormValid = false;
-            }
+           // Phone number validation
+if (contactLocalField) {
+    const localDigits = contactLocalField.value.replace(/\D/g, '');
+    // Only show red/error if the user has interacted with the field
+    if (touchedFields.has('contactNumberLocal')) {
+        if (localDigits.length !== 10) {
+            isFormValid = false;
+            phoneError.textContent = 'Phone must be 10 digits after +63 (e.g. 9171234567).';
+            phoneError.classList.remove('hidden');
+            contactLocalField.classList.add('border-red-500','ring-2','ring-red-500');
+        } else {
+            phoneError.classList.add('hidden');
+            contactLocalField.classList.remove('border-red-500','ring-2','ring-red-500');
+            if (hiddenPhoneField) hiddenPhoneField.value = '+63' + localDigits;
+        }
+    } else {
+        // User hasn't touched yet, remove any error styling
+        phoneError.classList.add('hidden');
+        contactLocalField.classList.remove('border-red-500','ring-2','ring-red-500');
+        if (localDigits.length === 10 && hiddenPhoneField) hiddenPhoneField.value = '+63' + localDigits;
+    }
+}
 
-            // Update button state
+
+            // Terms agreement
+            if (!termsCheckbox || !termsCheckbox.checked) isFormValid = false;
+
+            // Update submit button
             submitButton.disabled = !isFormValid;
         };
         
-        // Add listeners to all relevant inputs to check validity on change/input
-        form.querySelectorAll('input, select').forEach(field => {
-            field.addEventListener('input', checkFormValidity);
-        });
+        // Initial validity check
+        checkFormValidity();
 
-        // Add listener for password change to update the match visual cue
-        document.getElementById('password').addEventListener('input', checkFormValidity);
-        document.getElementById('confirmPassword').addEventListener('input', checkFormValidity);
-
-        // Add listener for the terms checkbox
-        termsCheckbox.addEventListener('change', checkFormValidity);
-        
-        
         // --- 2. Client-side Form Submission Handler ---
         form.addEventListener('submit', (e) => {
-            // Note: PHP handles the final submission logic on the server.
-            // This client-side code just adds a loading state.
             if (!submitButton.disabled) {
                 submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processing...';
-                // The disabled state is already managed by checkFormValidity
             } else {
-                 // In a real application, you'd show a custom error message box here.
-                 e.preventDefault();
-                 console.log("Form submission blocked due to invalid or incomplete data.");
+                e.preventDefault();
+                console.log("Form submission blocked due to invalid or incomplete data.");
             }
         });
 
-
-        // --- 3. Password Toggle Functionality ---
+        // --- 3. Password Toggle ---
         const setupPasswordToggle = (inputId, toggleId) => {
             const input = document.getElementById(inputId);
             const toggle = document.getElementById(toggleId);
-            
             if (!input || !toggle) return;
-
             toggle.addEventListener('click', () => {
                 const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
                 input.setAttribute('type', type);
-                
                 const icon = toggle.querySelector('i');
                 if (type === 'text') {
                     icon.classList.remove('fa-eye-slash');
@@ -430,54 +619,35 @@
                 }
             });
         };
-
         setupPasswordToggle('password', 'togglePassword');
         setupPasswordToggle('confirmPassword', 'toggleConfirmPassword');
 
-        // --- 4. Terms and Conditions Modal Logic ---
+        // --- 4. Terms Modal ---
         const hideTermsModal = () => {
-            // Animate out
             termsModal.classList.remove('opacity-100');
             termsModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => {
-                termsModal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => { termsModal.classList.add('hidden'); }, 300);
         };
-
         openTermsModal.addEventListener('click', (e) => {
             e.preventDefault();
             termsModal.classList.remove('hidden');
-            // Animate in
             setTimeout(() => {
                 termsModal.classList.add('opacity-100');
                 termsModal.querySelector('div').classList.remove('scale-95');
             }, 10);
         });
-
         closeTermsModal.addEventListener('click', hideTermsModal);
-        
-        // Logic for 'Accept and Close'
         closeTermsModalFooter.addEventListener('click', () => {
-            termsCheckbox.checked = true; // Mark checkbox as checked on acceptance
+            termsCheckbox.checked = true;
+            touchedFields.add('termsAgreed');
             checkFormValidity();
             hideTermsModal();
         });
-
-        // Logic for 'Cancel'
         cancelTermsModal.addEventListener('click', hideTermsModal);
-
-        // Close modal when clicking outside
-        termsModal.addEventListener('click', (e) => {
-            if (e.target === termsModal) {
-                hideTermsModal();
-            }
-        });
-
-
-        // Final check to set button state on initial load
-        checkFormValidity();
+        termsModal.addEventListener('click', (e) => { if (e.target === termsModal) hideTermsModal(); });
     });
 </script>
+
 
 </body>
 </html>
