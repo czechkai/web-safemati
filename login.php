@@ -6,46 +6,70 @@
     // Variables to hold submitted data for re-population (for UX on failure)
     $email = $_POST['email'] ?? '';
     
-    // --- Mock Authentication Data ---
-    // In a real application, this data would come from a secure database (e.g., MySQL).
-    // The password comparison (e.g., 'AdminPass123' === $password_input) would be done 
-    // using password_verify($password_input, $hashedPasswordFromDB).
-    $mock_credentials = [
-        'admin@safemati.gov.ph' => ['password' => 'AdminPass123', 'role' => 'Admin', 'redirect' => 'admin_dashboard.php'],
-        'user@safemati.gov.ph' => ['password' => 'UserPass123', 'role' => 'User', 'redirect' => 'user_dashboard.php'],
-    ];
-
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // --- 1. Basic Server-Side Validation ---
-        $email_input = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
+        // Sanitize inputs
+        // Normalize email (trim + lowercase) to match stored value
+        $email_input = strtolower(trim(filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL)));
         $password_input = $_POST['password'] ?? '';
-        
+
         if (!filter_var($email_input, FILTER_VALIDATE_EMAIL) || empty($password_input)) {
             $message = 'Please enter valid credentials.';
             $status_class = 'bg-red-900/40 text-red-300 border-red-700';
         } else {
-            // --- 2. Role-Based Mock Authentication ---
-            $account = $mock_credentials[strtolower($email_input)] ?? null;
-            $isAuthenticated = false;
-            
-            if ($account && $password_input === $account['password']) {
-                $isAuthenticated = true;
-            }
+            // Attempt to authenticate against users table
+            // FIX: Ensure the correct database connection file is required.
+            require_once __DIR__ . '/db_connect.php'; 
 
-            if ($isAuthenticated) {
-                // Determine role and target dashboard
-                $role = $account['role'];
-                $redirect_url = $account['redirect'];
-                
-                // 🛑 Real application action: 
-                // session_start(); $_SESSION['user_role'] = $role; header("Location: $redirect_url"); exit();
+            try {
+                $user = null;
+                // --- SECURE: Use prepared statements to fetch the user by email ---
+                if (isset($pdo) && $pdo) {
+                    $stmt = $pdo->prepare('SELECT id, first_name, last_name, email, password_hash FROM users WHERE email = :email LIMIT 1');
+                    $stmt->execute([':email' => $email_input]);
+                    $user = $stmt->fetch();
+                } else {
+                    $stmt = $conn->prepare('SELECT id, first_name, last_name, email, password_hash FROM users WHERE email = ? LIMIT 1');
+                    $stmt->bind_param('s', $email_input);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    $user = $res->fetch_assoc();
+                    $stmt->close(); // Close the mysqli statement
+                }
 
-                $message = "Login successful as **{$role}**! Intended redirect to: {$redirect_url}.";
-                $status_class = 'bg-green-900/40 text-green-300 border-green-700';
-                $email = ''; // Clear form on success
-            } else {
-                // If invalid: Show generic error
-                $message = 'Invalid email or password. Please try again.';
+                // Log whether user was found for debugging
+                error_log('Login lookup: user found=' . ($user ? 'yes' : 'no') . ' email=' . $email_input);
+
+                $pwOk = false;
+                if ($user) {
+                    // --- SECURE: Verify the password against the stored hash ---
+                    $pwOk = password_verify($password_input, $user['password_hash']);
+                    error_log('Login password_verify for ' . $email_input . ': ' . ($pwOk ? 'OK' : 'FAILED'));
+                }
+
+                if ($user && $pwOk) {
+                    // Auth success — start session and set session vars
+                    if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+
+                    // Remember me: extend session cookie lifetime if requested
+                    if (!empty($_POST['rememberMe'])) {
+                        // Extend session cookie for 30 days (simple approach)
+                        $params = session_get_cookie_params();
+                        setcookie(session_name(), session_id(), time() + 30*24*3600, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+                    }
+
+                    // Redirect to home/dashboard
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $message = 'Invalid email or password. Please try again.';
+                    $status_class = 'bg-red-900/40 text-red-300 border-red-700';
+                }
+            } catch (Exception $e) {
+                error_log('Login error: ' . $e->getMessage());
+                $message = 'Server error. Please try again later.';
                 $status_class = 'bg-red-900/40 text-red-300 border-red-700';
             }
         }
@@ -57,9 +81,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SafeMati Account Login</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <style>
@@ -103,7 +125,6 @@
 
 <body class="bg-gray-900 font-sans antialiased">
 
-<!-- Floating Message Container (For JS prompts like Forgot Password) -->
 <div id="js-message-container" class="fixed inset-x-0 top-0 mt-4 mx-auto max-w-md z-50 transition-opacity duration-500 opacity-0 pointer-events-none">
     <div id="js-message-content" class="p-4 border rounded-lg shadow-xl text-center"></div>
 </div>
@@ -111,32 +132,24 @@
 <div class="login-bg min-h-screen flex items-center justify-center pt-24 pb-12 sm:pt-0">
     <div class="max-w-md w-full mx-4 sm:mx-0">
         
-        <!-- Login Card -->
         <div class="login-card p-8 sm:p-10 border border-gray-700 rounded-xl shadow-2xl">
             
-            <!-- Logo and Header -->
             <div class="text-center mb-8">
                 <div class="text-3xl font-extrabold text-white mb-2">
                     <img src="assets/safemati-logo.png" alt="" class="h-16 w-auto mx-auto items-center" > <br>
                 </div>
                 <h1 class="text-2xl font-bold text-white mt-4">Account Login</h1>
                 <p class="text-gray-400 text-sm">Access your personalized dashboard and alerts.</p>
-                <!-- <div class="mt-2 p-2 text-xs bg-gray-800 rounded text-yellow-300 border border-yellow-700/50">
-                    MOCK ACCOUNTS: Admin: `admin@safemati.gov.ph` / `AdminPass123` | User: `user@safemati.gov.ph` / `UserPass123`
-                </div> -->
-            </div>
+                </div>
 
-            <!-- Status Message Display (PHP Backend Feedback) -->
             <?php if ($message): ?>
                 <div class="p-4 mb-6 border rounded-lg <?php echo $status_class; ?>" role="alert">
                     <p class="font-semibold text-sm"><?php echo $message; ?></p>
                 </div>
             <?php endif; ?>
             
-            <!-- Login Form -->
             <form id="loginForm" method="POST" action="login.php" novalidate>
 
-                <!-- Email Field -->
                 <div class="mb-5">
                     <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                     <div class="relative">
@@ -148,11 +161,9 @@
                                 aria-describedby="email-error">
                         <i class="fa-solid fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
                     </div>
-                    <!-- Error Message Placeholder -->
                     <p id="email-error" class="text-red-400 text-xs mt-1 h-4 hidden" aria-live="polite"></p>
                 </div>
 
-                <!-- Password Field -->
                 <div class="mb-4">
                     <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
                     <div class="relative">
@@ -162,16 +173,13 @@
                                 autocomplete="current-password"
                                 aria-describedby="password-error">
                         <i class="fa-solid fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
-                        <!-- Show/Hide Password Toggle -->
                         <button type="button" id="togglePassword" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition duration-150" aria-label="Show password">
                             <i class="fa-solid fa-eye-slash"></i>
                         </button>
                     </div>
-                    <!-- Error Message Placeholder (Hidden, as per request) -->
                     <p id="password-error" class="text-red-400 text-xs mt-1 h-4 hidden" aria-live="polite"></p>
                 </div>
 
-                <!-- Remember Me & Forgot Password -->
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center">
                         <input id="rememberMe" name="rememberMe" type="checkbox" class="h-4 w-4 text-red-600 bg-gray-900 border-gray-600 rounded focus:ring-red-500">
@@ -179,13 +187,11 @@
                             Remember Me
                         </label>
                     </div>
-                    <!-- Forgot Password Link -->
                     <a href="#" id="forgotPasswordLink" class="text-sm font-medium text-red-500 hover:text-red-400 transition duration-150">
                         Forgot Password?
                     </a>
                 </div>
 
-                <!-- Submit Button -->
                 <div>
                     <button type="submit" id="submitButton" disabled
                             class="btn-submit-gradient w-full px-4 py-3 text-white font-bold rounded-lg shadow-md uppercase text-base tracking-wider transition duration-300 opacity-60 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.00]">
@@ -194,10 +200,8 @@
                 </div>
             </form>
 
-            <!-- Call-to-Action Link -->
             <div class="mt-8 text-center text-gray-400">
                 Don't have an account? 
-                <!-- Sign Up Link -->
                 <a href="signup.php" class="text-red-500 hover:text-red-400 font-semibold transition duration-150">
                     Sign Up Now
                 </a>

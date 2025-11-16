@@ -44,7 +44,8 @@
         $firstName = trim($formData['firstName']);
         $middleName = trim($formData['middleName']);
         $lastName = trim($formData['lastName']);
-        $email = filter_var($formData['email'], FILTER_SANITIZE_EMAIL);
+        // Normalize email to lowercase and trim to avoid mismatch during login
+        $email = strtolower(trim(filter_var($formData['email'], FILTER_SANITIZE_EMAIL)));
         $contactNumber = trim($formData['contactNumber']);
         $houseStreetSubd = trim($formData['houseStreetSubd']);
         $barangay = trim($formData['barangay']);
@@ -99,44 +100,98 @@
 
         // 3. If validations pass, save to DB
         if (empty($errors)) {
-            require_once __DIR__ . '/db.php';
+            // FIX: Use the correct file name: db_connect.php
+            require_once __DIR__ . '/db_connect.php';
 
             try {
-                // Check duplicate email
-                $exists = false;
-                if (isset($pdo) && $pdo) {
-                    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
-                    $stmt->execute([':email' => $email]);
-                    $exists = (bool)$stmt->fetch();
-                } else {
-                    $stmt = $conn->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
-                    $stmt->bind_param('s', $email);
-                    $stmt->execute();
-                    $stmt->store_result();
-                    $exists = $stmt->num_rows > 0;
+                // Ensure DB connection object ($conn from db_connect.php) exists
+                if (!isset($conn) || !$conn) {
+                    throw new Exception('Database connection not available ($conn is missing or invalid).');
                 }
+                
+                // --- QUICK SCHEMA CHECK (using mysqli for table/column creation) ---
+                // NOTE: This logic is generally discouraged in production but kept for development convenience.
+                $res = $conn->query("SHOW TABLES LIKE 'users'");
+                if (!$res || $res->num_rows === 0) {
+                    // Create table if it doesn't exist, including all necessary columns
+                    $create = "CREATE TABLE IF NOT EXISTS users (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        first_name VARCHAR(150) NOT NULL,
+                        middle_name VARCHAR(150),
+                        last_name VARCHAR(150) NOT NULL,
+                        email VARCHAR(255) NOT NULL UNIQUE,
+                        contact_number VARCHAR(50),
+                        house_street_subd VARCHAR(255),
+                        barangay VARCHAR(100),
+                        password_hash VARCHAR(255) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+                    if (!$conn->query($create)) {
+                        throw new Exception('Failed to create users table: ' . $conn->error);
+                    }
+                } else {
+                    // Check and add missing columns if the table exists but is outdated.
+
+                    // Check and add house_street_subd column
+                    $colres = $conn->query("SHOW COLUMNS FROM users LIKE 'house_street_subd'");
+                    if (!$colres || $colres->num_rows === 0) {
+                        if (!$conn->query("ALTER TABLE users ADD COLUMN house_street_subd VARCHAR(255)")) {
+                            throw new Exception('Failed to add column house_street_subd: ' . $conn->error);
+                        }
+                    }
+                    
+                    // Check and add barangay column
+                    $colres2 = $conn->query("SHOW COLUMNS FROM users LIKE 'barangay'");
+                    if (!$colres2 || $colres2->num_rows === 0) {
+                        if (!$conn->query("ALTER TABLE users ADD COLUMN barangay VARCHAR(100)")) {
+                            throw new Exception('Failed to add column barangay: ' . $conn->error);
+                        }
+                    }
+                    
+                    // FIX FOR THE CURRENT ERROR: Check and add password_hash column
+                    $colres3 = $conn->query("SHOW COLUMNS FROM users LIKE 'password_hash'");
+                    if (!$colres3 || $colres3->num_rows === 0) {
+                        // Assuming you want it to be NOT NULL as it is crucial for security.
+                        if (!$conn->query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL AFTER barangay")) {
+                            throw new Exception('Failed to add column password_hash: ' . $conn->error);
+                        }
+                    }
+                }
+                // --- END QUICK SCHEMA CHECK ---
+
+                // --- A. Check for duplicate email (SECURE: using mysqli prepared statement) ---
+                $exists = false;
+                $stmt = $conn->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+                if (!$stmt) {
+                     throw new Exception('Prepare select statement failed: ' . $conn->error);
+                }
+                $stmt->bind_param('s', $email);
+                $stmt->execute();
+                $stmt->store_result();
+                $exists = $stmt->num_rows > 0;
+                $stmt->close(); // Close select statement
 
                 if ($exists) {
                     $errors[] = 'An account with that email already exists.';
                 } else {
+                    // --- B. Hash Password (SECURE: using password_hash) ---
                     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-                    if (isset($pdo) && $pdo) {
-                        $insert = $pdo->prepare('INSERT INTO users (first_name,middle_name,last_name,email,contact_number,house_street_subd,barangay,password_hash) VALUES (:fn,:mn,:ln,:email,:contact,:house,:barangay,:ph)');
-                        $insert->execute([
-                            ':fn' => $firstName,
-                            ':mn' => $middleName,
-                            ':ln' => $lastName,
-                            ':email' => $email,
-                            ':contact' => $contactNumber,
-                            ':house' => $houseStreetSubd,
-                            ':barangay' => $barangay,
-                            ':ph' => $passwordHash
-                        ]);
-                    } else {
-                        $stmt = $conn->prepare('INSERT INTO users (first_name,middle_name,last_name,email,contact_number,house_street_subd,barangay,password_hash) VALUES (?,?,?,?,?,?,?,?)');
-                        $stmt->bind_param('ssssssss', $firstName, $middleName, $lastName, $email, $contactNumber, $houseStreetSubd, $barangay, $passwordHash);
-                        $stmt->execute();
+                    
+                    // --- C. Insert New User (SECURE: using mysqli prepared statement) ---
+                    $stmt = $conn->prepare('
+                        INSERT INTO users 
+                        (first_name, middle_name, last_name, email, contact_number, house_street_subd, barangay, password_hash) 
+                        VALUES 
+                        (?, ?, ?, ?, ?, ?, ?, ?)
+                    ');
+                    if (!$stmt) {
+                         throw new Exception('Prepare insert statement failed: ' . $conn->error);
                     }
+                    
+                    // Bind parameters: ssssssss = 8 strings
+                    $stmt->bind_param('ssssssss', $firstName, $middleName, $lastName, $email, $contactNumber, $houseStreetSubd, $barangay, $passwordHash);
+                    $stmt->execute();
+                    $stmt->close(); // Close insert statement
 
                     $message = 'Success! Your account has been registered. You will be redirected to the login page in 3 seconds.';
                     $status_class = 'bg-green-500/20 text-green-300 border-green-500';
@@ -146,8 +201,10 @@
                     $formData['termsAgreed'] = 'off';
                 }
             } catch (Exception $e) {
+                // Log full error for debugging
                 error_log('Signup error: ' . $e->getMessage());
-                $errors[] = 'Server error while registering. Please try again later.';
+                // Surface a sanitized message to the user
+                $errors[] = 'A database error occurred during registration. Please try again later. (' . htmlspecialchars($e->getMessage()) . ')';
             }
         }
 
@@ -163,9 +220,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SafeMati User Registration</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* Custom styles for the gradient button */
@@ -193,16 +248,12 @@
 </head>
 <body class="bg-gray-900 font-sans antialiased text-gray-100">
 
-    <!-- Main Registration Container -->
-    <!-- Removed pt-24 and used py-12 for generic vertical padding, ensured centering, and full viewport height -->
     <div class="py-12 px-4 min-h-screen flex items-center justify-center">
-        <!-- Form Card Container - Increased width to max-w-4xl for a wider form -->
         <div id="signup-form-card" class="max-w-9xl w-full p-6 sm:p-10 space-y-8 bg-gray-800 rounded-xl shadow-2xl relative mx-auto">
             
             <h1 class="text-4xl font-extrabold text-red-500 text-center">SafeMati Registration</h1>
             <p class="text-center text-gray-400">Join us to receive real-time disaster and safety alerts for Mati City.</p>
 
-            <!-- Status/Message Alert -->
             <?php if ($message): ?>
                 <div id="status-message" class="p-4 rounded-lg border-l-4 font-semibold text-center <?= htmlspecialchars($status_class) ?>" role="alert">
                     <p><?= htmlspecialchars($message) ?></p>
@@ -211,7 +262,6 @@
 
             <form method="POST" id="signup-form" class="space-y-6">
 
-                <!-- Section 1: Personal Information -->
                 <fieldset class="border border-gray-700 p-4 rounded-lg">
                     <legend class="text-red-400 px-2 text-lg font-semibold">Personal Information</legend>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -236,7 +286,6 @@
                     </div>
                 </fieldset>
 
-                <!-- Section 2: Contact Information -->
                 <fieldset class="border border-gray-700 p-4 rounded-lg">
                     <legend class="text-red-400 px-2 text-lg font-semibold">Contact Details</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -261,7 +310,6 @@
                     </div>
                 </fieldset>
 
-                <!-- Section 3: Residential Address (Mati City Only) -->
                 <fieldset class="border border-gray-700 p-4 rounded-lg">
                     <legend class="text-red-400 px-2 text-lg font-semibold">Residential Address</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -289,7 +337,6 @@
                     </div>
                 </fieldset>
                 
-                <!-- Section 4: Account Credentials -->
                 <fieldset class="border border-gray-700 p-4 rounded-lg">
                     <legend class="text-red-400 px-2 text-lg font-semibold">Account Credentials</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,20 +359,12 @@
                             </button>
                         </div>
                     </div>
-                    <!-- Password Requirements & Match Indicator -->
                     <div class="mt-3 text-sm text-gray-300">
-                        <!-- <ul class="space-y-1">
-                            <li id="pw-require-length" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> At least 8 characters</li>
-                            <li id="pw-require-digit" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> Contains a number</li>
-                            <li id="pw-require-symbol" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> Contains a symbol (e.g. !@#$%)</li>
-                            <li id="pw-match-status" class="flex items-center text-gray-400"><i class="fa-regular fa-circle-check mr-2 opacity-0 text-green-400"></i> Passwords match</li>
-                        </ul> -->
                         <p id="passwordError" class="text-red-400 text-sm mt-2 hidden" aria-live="polite"></p>
                         <p id="confirmStatus" class="text-sm mt-2 hidden" aria-live="polite"></p>
                     </div>
                 </fieldset>
 
-                <!-- Terms and Conditions & Submit -->
                 <div class="space-y-6 pt-4">
                     <div class="flex items-start">
                         <div class="flex items-center h-5">
@@ -357,10 +396,8 @@
     </div>
 
 
-    <!-- Terms and Conditions Modal (Hidden by default) -->
     <div id="terms-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-70 transition-opacity duration-300 opacity-0" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
-            <!-- Modal Content Card -->
             <div class="bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 scale-95 sm:my-8 sm:w-full sm:max-w-4xl w-full">
                 <div class="bg-gray-800 px-6 py-4 sm:p-6 sm:pb-4">
                     <div class="flex items-center justify-between pb-3 border-b border-gray-700">
@@ -558,27 +595,27 @@
             }
 
            // Phone number validation
-if (contactLocalField) {
-    const localDigits = contactLocalField.value.replace(/\D/g, '');
-    // Only show red/error if the user has interacted with the field
-    if (touchedFields.has('contactNumberLocal')) {
-        if (localDigits.length !== 10) {
-            isFormValid = false;
-            phoneError.textContent = 'Phone must be 10 digits after +63 (e.g. 9171234567).';
-            phoneError.classList.remove('hidden');
-            contactLocalField.classList.add('border-red-500','ring-2','ring-red-500');
-        } else {
-            phoneError.classList.add('hidden');
-            contactLocalField.classList.remove('border-red-500','ring-2','ring-red-500');
-            if (hiddenPhoneField) hiddenPhoneField.value = '+63' + localDigits;
-        }
-    } else {
-        // User hasn't touched yet, remove any error styling
-        phoneError.classList.add('hidden');
-        contactLocalField.classList.remove('border-red-500','ring-2','ring-red-500');
-        if (localDigits.length === 10 && hiddenPhoneField) hiddenPhoneField.value = '+63' + localDigits;
-    }
-}
+            if (contactLocalField) {
+                const localDigits = contactLocalField.value.replace(/\D/g, '');
+                // Only show red/error if the user has interacted with the field
+                if (touchedFields.has('contactNumberLocal')) {
+                    if (localDigits.length !== 10) {
+                        isFormValid = false;
+                        phoneError.textContent = 'Phone must be 10 digits after +63 (e.g. 9171234567).';
+                        phoneError.classList.remove('hidden');
+                        contactLocalField.classList.add('border-red-500','ring-2','ring-red-500');
+                    } else {
+                        phoneError.classList.add('hidden');
+                        contactLocalField.classList.remove('border-red-500','ring-2','ring-red-500');
+                        if (hiddenPhoneField) hiddenPhoneField.value = '+63' + localDigits;
+                    }
+                } else {
+                    // User hasn't touched yet, remove any error styling
+                    phoneError.classList.add('hidden');
+                    contactLocalField.classList.remove('border-red-500','ring-2','ring-red-500');
+                    if (localDigits.length === 10 && hiddenPhoneField) hiddenPhoneField.value = '+63' + localDigits;
+                }
+            }
 
 
             // Terms agreement
