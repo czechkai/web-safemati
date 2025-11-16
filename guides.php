@@ -57,36 +57,7 @@
                     
                     <!-- Guide Cards (2 columns on medium screens and up) -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <?php
-                        // Try to load guides from DB; fallback to static cards if DB unavailable or empty
-                        $db_guides = [];
-                        try {
-                            require_once __DIR__ . '/db.php';
-                            if (isset($pdo) && $pdo) {
-                                $stmt = $pdo->query("SELECT id, title, slug, content FROM guides WHERE is_published=1 ORDER BY sort_order, created_at DESC LIMIT 100");
-                                $db_guides = $stmt->fetchAll();
-                            }
-                        } catch (Exception $e) {
-                            // ignore and fall back to static
-                        }
-
-                        if (!empty($db_guides)) {
-                            foreach ($db_guides as $g) {
-                                $title = htmlspecialchars($g['title']);
-                                $slug = htmlspecialchars($g['slug']);
-                                $excerpt = htmlspecialchars(mb_strimwidth(strip_tags($g['content']), 0, 220, '...'));
-                                $link = 'guide.php?slug=' . urlencode($slug);
-                                echo "<div class=\"guide-card p-6 bg-gray-900 rounded-lg shadow-xl hover:shadow-red-800/50\">";
-                                echo "<i class=\"fa-solid fa-book-open-reader text-5xl text-red-400 mb-4\"></i>";
-                                echo "<h3 class=\"text-2xl font-bold text-white mb-3\">$title</h3>";
-                                echo "<p class=\"text-gray-400 mb-5 text-base\">$excerpt</p>";
-                                echo "<a href=\"$link\" class=\"inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors\">View Guide <i class=\"fa-solid fa-arrow-right ml-2 text-sm\"></i></a>";
-                                echo "</div>";
-                            }
-                        } else {
-                            // Fallback static cards (original content)
-                        ?>
-
+                        
                         <!-- Guide Card 1: Flood -->
                         <div class="guide-card p-6 bg-gray-900 rounded-lg shadow-xl hover:shadow-red-800/50">
                             <i class="fa-solid fa-water text-5xl text-blue-400 mb-4"></i>
@@ -106,7 +77,7 @@
                                 View Guide <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
                             </a>
                         </div>
-
+                        
                         <!-- Guide Card 3: Earthquake -->
                         <div class="guide-card p-6 bg-gray-900 rounded-lg shadow-xl hover:shadow-red-800/50">
                             <i class="fa-solid fa-house-crack text-5xl text-yellow-500 mb-4"></i>
@@ -146,8 +117,7 @@
                                 View Guide <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
                             </a>
                         </div>
-
-                        <?php } // end fallback static ?>
+                        
                     </div>
                 </div>
 
@@ -208,7 +178,7 @@
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <button class="w-full sm:w-auto px-8 py-4 bg-white text-red-700 font-bold rounded-lg shadow-xl uppercase text-lg hover:bg-gray-100 transform hover:scale-[1.02] transition duration-300">
-                        <a href="signup.php">Sign Up Now</a>
+                        Sign Up Now
                     </button>
                     <button class="w-full sm:w-auto px-8 py-4 bg-gray-900/50 text-white font-semibold border-2 border-white rounded-lg hover:bg-white/20 transition duration-300 uppercase text-lg">
                         Login
