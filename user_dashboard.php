@@ -1,0 +1,313 @@
+<?php 
+    // This loads the HTML head, opening body tag, fixed header, 
+    // mobile menu script, and enforces the session check/redirect.
+    include 'user_header.php'; 
+
+    // --- 1. WELCOME / USER GREETING DATA ---
+    $user_first_name = $_SESSION['user_name'] ?? 'User';
+
+    // --- 2. TODAY'S QUICK STATS DATA (SIMULATED) ---
+    $stats = [
+        ['count' => '3 Active', 'label' => 'Alerts Today', 'icon' => 'fa-triangle-exclamation', 'color' => 'text-red-500', 'link' => 'user_alerts.php'],
+        ['count' => 'Clear Sky', 'label' => 'Weather Status', 'icon' => 'fa-cloud-sun', 'color' => 'text-blue-400', 'link' => '#weather-overview'],
+        ['count' => '5 Available', 'label' => 'Evac Centers Open', 'icon' => 'fa-person-shelter', 'color' => 'text-green-500', 'link' => 'user_hazard_map.php'],
+        ['count' => '2 New', 'label' => 'Unread Updates', 'icon' => 'fa-bell', 'color' => 'text-yellow-500', 'link' => 'user_notifications.php'],
+    ];
+
+    // --- 3. LATEST ALERTS SECTION DATA (SIMULATED) ---
+    // Color borders: Flood=Blue, Fire=Red, Earthquake=Orange, Weather=Yellow
+    $latest_alerts = [
+        [
+            'title' => 'Flood Watch in Barangay Central',
+            'category' => 'Flood',
+            'datetime' => 'Issued: Nov 19, 2025 - 3:14 PM',
+            'description' => 'Heavy rains expected in low-lying areas. Residents near rivers advised to monitor water levels.',
+            'color_class' => 'border-l-blue-500', // Blue
+            'category_class' => 'bg-blue-600/30 text-blue-300'
+        ],
+        [
+            'title' => 'Structural Fire near Public Market',
+            'category' => 'Fire',
+            'datetime' => 'Reported: Nov 19, 2025 - 1:05 PM',
+            'description' => 'BFP teams are responding. Avoid the area near the public market for safety.',
+            'color_class' => 'border-l-red-600', // Red
+            'category_class' => 'bg-red-600/30 text-red-300'
+        ],
+        [
+            'title' => 'M 4.2 Earthquake Advisory',
+            'category' => 'Earthquake',
+            'datetime' => 'Recorded: Nov 18, 2025 - 10:00 AM',
+            'description' => 'Minor tremor felt. No tsunami warning issued. Check buildings for cracks.',
+            'color_class' => 'border-l-orange-500', // Orange
+            'category_class' => 'bg-orange-orange-600/30 text-orange-300'
+        ],
+    ];
+
+    // --- 5. SAFETY TIPS OF THE DAY DATA (SIMULATED) ---
+    $safety_tips = [
+        "Prepare a 'Go-Bag' with essentials like water, food, first aid, and copies of important documents.",
+        "Know the nearest evacuation route and the designated safe zone from your home and workplace.",
+        "Keep a battery-powered radio and extra batteries handy to receive official updates during power outages.",
+        "Secure tall furniture to the walls to prevent them from toppling over during an earthquake.",
+    ];
+    $today_tip = $safety_tips[array_rand($safety_tips)];
+
+    // --- 6. WEATHER OVERVIEW DATA (SIMULATED) ---
+    $weather_data = [
+        'city' => 'Mati City',
+        'temperature' => '31°C',
+        'condition' => 'Partly Cloudy',
+        'humidity' => '75%',
+        'wind' => '15 km/h NE'
+    ];
+?>
+
+<!-- IMPORTANT FIX: Added pt-24 to push content below the fixed header -->br
+<div class="pt-24 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-12"><br><br>
+
+    <!-- 1. Welcome Header -->
+    <header class="p-6 sm:p-8 rounded-2xl shadow-2xl transition transform bg-gradient-to-r from-gray-900 to-gray-800 border border-red-700/50">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">
+            Welcome back, <span class="text-red-500 drop-shadow-lg"><?= htmlspecialchars($user_first_name); ?></span>!
+        </h1>
+        <p class="text-gray-400 text-lg">Stay updated with the latest safety information for Mati City.</p>
+    </header>
+
+    <!-- 2. Today’s Quick Stats (4 Cards) -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <?php foreach ($stats as $stat): ?>
+        <a href="<?= $stat['link']; ?>" class="group block bg-gray-800 p-5 rounded-xl shadow-xl border border-gray-700 transition duration-300 transform hover:scale-[1.05] hover:border-red-500 hover:shadow-red-900/40">
+            <div class="flex flex-col items-center justify-center text-center">
+                <i class="fa-solid <?= $stat['icon']; ?> <?= $stat['color']; ?> text-3xl sm:text-4xl mb-3 opacity-90 group-hover:opacity-100 transition"></i>
+                <p class="text-xl sm:text-2xl font-bold text-white mb-1 leading-tight"><?= $stat['count']; ?></p>
+                <p class="text-xs sm:text-sm text-gray-400 font-medium tracking-wider uppercase"><?= $stat['label']; ?></p>
+            </div>
+        </a>
+        <?php endforeach; ?>
+    </section>
+
+    <!-- Main Content Grid (Alerts, Quick Actions, Tips, Weather, Map) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        
+        <!-- Left Column (Span 2): Latest Alerts Feed -->
+        <section class="lg:col-span-2 space-y-6">
+            <h2 class="text-2xl font-bold text-white border-b border-red-700/50 pb-3 mb-6"><i class="fa-solid fa-bell-c text-red-500 mr-2"></i> Critical & Latest Alerts</h2>
+
+            <?php foreach ($latest_alerts as $alert): ?>
+            <div class="bg-gray-800 p-6 rounded-xl shadow-xl border-l-8 <?= $alert['color_class']; ?> transition duration-200 hover:bg-gray-700/50 hover:shadow-2xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xl font-bold text-white"><?= $alert['title']; ?></h3>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full <?= $alert['category_class']; ?> border border-current flex-shrink-0">
+                        <?= $alert['category']; ?>
+                    </span>
+                </div>
+                <p class="text-gray-400 text-sm italic mb-4"><?= $alert['datetime']; ?></p>
+                <p class="text-gray-300 mb-5 leading-relaxed"><?= $alert['description']; ?></p>
+                <a href="user_alert_detail.php?id=1" class="btn-gradient-sm inline-flex items-center text-sm font-bold px-4 py-2 rounded-lg transition duration-150 transform hover:scale-[1.03]">
+                    <i class="fa-solid fa-arrow-right mr-2"></i> Read Full Advisory
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </section>
+
+        <!-- Right Column (Span 1): Side Widgets -->
+        <div class="lg:col-span-1 space-y-10">
+            
+            <!-- 5. Safety Tips of the Day -->
+            <section>
+                <h2 class="text-xl font-bold text-white mb-4"><i class="fa-solid fa-lightbulb mr-2 text-yellow-400"></i> Safety Tip of the Day</h2>
+                <div class="bg-gray-800 p-5 rounded-xl shadow-xl border border-gray-700">
+                    <p class="text-gray-300 italic text-md leading-relaxed">
+                        "<?= $today_tip; ?>"
+                    </p>
+                </div>
+            </section>
+            
+            <!-- 4. Quick Actions Section -->
+            <section>
+                <h2 class="text-xl font-bold text-white mb-4"><i class="fa-solid fa-bolt mr-2 text-red-500"></i> Quick Actions</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    
+                    <?php 
+                        $actions = [
+                            ['title' => 'View All Alerts', 'icon' => 'fa-list-ul', 'link' => 'user_alerts.php'],
+                            ['title' => 'Emergency Hotlines', 'icon' => 'fa-phone-volume', 'link' => 'user_hotlines.php'],
+                            ['title' => 'Disaster Guides', 'icon' => 'fa-book-open', 'link' => 'user_guides.php'],
+                            ['title' => 'Profile Settings', 'icon' => 'fa-user-gear', 'link' => 'user_profile.php'],
+                        ];
+                    ?>
+                    
+                    <?php foreach ($actions as $action): ?>
+                    <a href="<?= $action['link']; ?>" class="action-tile p-4 bg-gray-800 rounded-xl text-center border border-gray-700 transition duration-200 transform hover:scale-[1.05] hover:border-red-500 hover:bg-gray-700">
+                        <i class="fa-solid <?= $action['icon']; ?> text-3xl text-red-500 mb-2 drop-shadow-md"></i>
+                        <p class="text-xs font-medium text-white"><?= $action['title']; ?></p>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+            
+            <!-- 6. Weather Overview -->
+           <div class="weather-card p-6 w-full max-w-lg rounded-2xl text-white">
+        
+        <h2 class="text-3xl font-extrabold mb-1 tracking-tight">
+            Mati City
+        </h2>
+        <p class="text-gray-400 mb-6 text-sm">Davao Oriental, Philippines</p>
+
+        <!-- Current Conditions (Simulated "Flashing Data") -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center">
+                <!-- Large, simulated temperature -->
+                <p id="current-temp" class="text-7xl font-light mr-4 text-blue-300">
+                    31<span class="text-4xl align-top">°C</span>
+                </p>
+                <div>
+                    <!-- Simulated description -->
+                    <p id="description" class="text-xl font-semibold">Partly Sunny</p>
+                    <p id="real-feel" class="text-sm text-gray-400">RealFeel: 37°C</p>
+                </div>
+            </div>
+            <!-- Large weather icon (using an SVG for high quality) -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400">
+                <circle cx="12" cy="12" r="6"/>
+                <path d="M12 2v2"/>
+                <path d="M12 20v2"/>
+                <path d="m4.93 4.93 1.41 1.41"/>
+                <path d="m17.66 17.66 1.41 1.41"/>
+                <path d="M2 12h2"/>
+                <path d="M20 12h2"/>
+                <path d="m6.34 17.66-1.41 1.41"/>
+                <path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+        </div>
+
+        <!-- Detailed Metrics -->
+        <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+            
+            <div class="data-point pb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M16 8v5a6 6 0 0 0 4 5l-2 2h-6l-2-2a6 6 0 0 0 4-5V8a4 4 0 1 0-8 0v5a6 6 0 0 0 4 5l-2 2h-6l-2-2a6 6 0 0 0 4-5V8"/></svg>
+                <div>
+                    <p class="text-gray-400">Wind</p>
+                    <p class="font-medium">E 7 km/h</p>
+                </div>
+            </div>
+
+            <div class="data-point pb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/><path d="M8 12.8a4 4 0 1 1 8 0v.7A4 4 0 0 1 12 18h-1a4 4 0 0 1-4-4v-1.5"/></svg>
+                <div>
+                    <p class="text-gray-400">Humidity</p>
+                    <p class="font-medium">78%</p>
+                </div>
+            </div>
+
+            <div class="data-point pb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M12 20a8 8 0 0 0 8-8V7a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v5a8 8 0 0 0 8 8Z"/><path d="M8 17a4 4 0 1 1 8 0"/></svg>
+                <div>
+                    <p class="text-gray-400">Pressure</p>
+                    <p class="font-medium">1012 hPa</p>
+                </div>
+            </div>
+
+            <div class="data-point pb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <div>
+                    <p class="text-gray-400">UV Index</p>
+                    <p class="font-medium">Moderate (5)</p>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-gray-700/50">
+            <!-- Source Credit Link -->
+            <p class="text-xs text-gray-500 mb-2">
+                Live data sourced from:
+            </p>
+            <a href="https://www.accuweather.com/en/ph/mati-city/262967/weather-forecast/262967" target="_blank" class="flex items-center text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors">
+                <i class="fas fa-external-link-alt text-xs mr-2"></i> AccuWeather - Mati City, Philippines
+            </a>
+            <p class="text-xs text-red-400 mt-2">
+                *The data shown above is a simulation and not real-time due to third-party website restrictions.*
+            </p>
+        </div>
+
+    </div>
+            
+            <!-- 7. City Hazard Map (Static Image Placeholder) -->
+            <section class="max-w-4xl mx-auto p-4 md:p-8 bg-gray-900">
+    <h2 class="text-3xl font-bold text-white mb-6">
+        <i class="fa-solid fa-map-location-dot mr-3 text-red-500"></i> Hazard Map
+    </h2>
+    <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+        <!--
+        Attempting to embed the external map via iframe.
+        Note: The success of this depends on the target site's security headers (X-Frame-Options/CSP).
+        A fallback message is included inside the iframe for security restrictions.
+        -->
+        <div class="relative w-full" style="height: 480px;">
+            <iframe 
+                src="https://hazardhunter.georisk.gov.ph/map" 
+                title="Philippine Hazard Hunter Map" 
+                class="w-full h-full border-none" 
+                allowfullscreen 
+                loading="lazy">
+                
+                <!-- Fallback content if the browser blocks the iframe -->
+                <div class="p-8 text-center bg-gray-900 flex flex-col justify-center items-center h-full">
+                    <p class="text-lg text-gray-300 mb-4">
+                        <i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-2"></i> 
+                        The external website restricts direct embedding.
+                    </p>
+                    <a href="https://hazardhunter.georisk.gov.ph/map" target="_blank" 
+                       class="inline-block px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg uppercase tracking-wide transition duration-300 transform hover:scale-[1.05] shadow-lg">
+                        <i class="fa-solid fa-up-right-from-square mr-2"></i> View Map in New Tab
+                    </a>
+                </div>
+            </iframe>
+        </div>
+        
+        <div class="p-4 bg-gray-700 border-t border-gray-600">
+            <p class="text-sm text-gray-400 text-center">
+                Map data provided by HazardHunter, an initiative of the Philippine Government.
+            </p>
+        </div>
+    </div>
+</section>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Custom CSS for button gradient -->
+<style>
+    /* Large Button Gradient (used for Full Map, Report, etc.) */
+    .btn-gradient {
+        background: linear-gradient(90deg, #e60000 0%, #990000 100%);
+        transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+        background: linear-gradient(90deg, #ff1a1a 0%, #cc0000 100%);
+        box-shadow: 0 4px 15px rgba(230, 0, 0, 0.4);
+    }
+    /* Small Button Gradient (used for Read More links) */
+    .btn-gradient-sm {
+        background: linear-gradient(90deg, #cc0000 0%, #a30000 100%);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(204, 0, 0, 0.3);
+    }
+    .btn-gradient-sm:hover {
+        background: linear-gradient(90deg, #e60000 0%, #cc0000 100%);
+        box-shadow: 0 2px 10px rgba(230, 0, 0, 0.5);
+    }
+
+    /* Additional subtle styling for the main container */
+    body {
+        background-color: #121212; /* Ensure background is dark */
+    }
+</style>
+
+<?php 
+    // This loads the closing HTML tags and the footer markup.
+    include 'user_footer.php'; 
+?>
