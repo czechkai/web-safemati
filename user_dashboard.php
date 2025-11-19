@@ -147,132 +147,127 @@
             </section>
             
             <!-- 6. Weather Overview -->
-           <div class="weather-card p-6 w-full max-w-lg rounded-2xl text-white">
-        
-        <h2 class="text-3xl font-extrabold mb-1 tracking-tight">
-            Mati City
-        </h2>
-        <p class="text-gray-400 mb-6 text-sm">Davao Oriental, Philippines</p>
+            <section>
+                <h2 class="text-xl font-bold text-white mb-4">
+                    <i class="fa-solid fa-cloud-sun mr-2 text-blue-400"></i> Weather Overview
+                </h2>
+                <div class="weather-card p-6 w-full rounded-2xl text-white bg-gradient-to-br from-blue-900/40 to-blue-800/40 border-2 border-blue-700/50">
+                    
+                    <h2 class="text-3xl font-extrabold mb-1 tracking-tight">
+                        Mati City
+                    </h2>
+                    <p class="text-gray-400 mb-6 text-sm">Davao Oriental, Philippines</p>
 
-        <!-- Current Conditions (Simulated "Flashing Data") -->
-        <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center">
-                <!-- Large, simulated temperature -->
-                <p id="current-temp" class="text-7xl font-light mr-4 text-blue-300">
-                    31<span class="text-4xl align-top">°C</span>
-                </p>
-                <div>
-                    <!-- Simulated description -->
-                    <p id="description" class="text-xl font-semibold">Partly Sunny</p>
-                    <p id="real-feel" class="text-sm text-gray-400">RealFeel: 37°C</p>
+                    <!-- Current Conditions -->
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center">
+                            <p id="current-temp" class="text-7xl font-light mr-4 text-blue-300">
+                                31<span class="text-4xl align-top">°C</span>
+                            </p>
+                            <div>
+                                <p id="description" class="text-xl font-semibold">Partly Sunny</p>
+                                <p id="real-feel" class="text-sm text-gray-400">RealFeel: 37°C</p>
+                            </div>
+                        </div>
+                        <!-- Weather icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400">
+                            <circle cx="12" cy="12" r="6"/>
+                            <path d="M12 2v2"/>
+                            <path d="M12 20v2"/>
+                            <path d="m4.93 4.93 1.41 1.41"/>
+                            <path d="m17.66 17.66 1.41 1.41"/>
+                            <path d="M2 12h2"/>
+                            <path d="M20 12h2"/>
+                            <path d="m6.34 17.66-1.41 1.41"/>
+                            <path d="m19.07 4.93-1.41 1.41"/>
+                        </svg>
+                    </div>
+
+                    <!-- Detailed Metrics -->
+                    <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                        
+                        <div class="data-point pb-4 flex items-center">
+                            <i class="fa-solid fa-wind text-cyan-400 text-xl mr-3"></i>
+                            <div>
+                                <p class="text-gray-400">Wind</p>
+                                <p class="font-medium">E 7 km/h</p>
+                            </div>
+                        </div>
+
+                        <div class="data-point pb-4 flex items-center">
+                            <i class="fa-solid fa-droplet text-cyan-400 text-xl mr-3"></i>
+                            <div>
+                                <p class="text-gray-400">Humidity</p>
+                                <p class="font-medium">78%</p>
+                            </div>
+                        </div>
+
+                        <div class="data-point pb-4 flex items-center">
+                            <i class="fa-solid fa-gauge text-cyan-400 text-xl mr-3"></i>
+                            <div>
+                                <p class="text-gray-400">Pressure</p>
+                                <p class="font-medium">1012 hPa</p>
+                            </div>
+                        </div>
+
+                        <div class="data-point pb-4 flex items-center">
+                            <i class="fa-solid fa-sun text-cyan-400 text-xl mr-3"></i>
+                            <div>
+                                <p class="text-gray-400">UV Index</p>
+                                <p class="font-medium">Moderate (5)</p>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-blue-700/50">
+                        <p class="text-xs text-gray-500 mb-2">
+                            Live data sourced from:
+                        </p>
+                        <a href="https://www.accuweather.com/en/ph/mati-city/262967/weather-forecast/262967" target="_blank" class="flex items-center text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors">
+                            <i class="fas fa-external-link-alt text-xs mr-2"></i> AccuWeather - Mati City
+                        </a>
+                        <p class="text-xs text-red-400 mt-2">
+                            *Simulated data - not real-time
+                        </p>
+                    </div>
+
                 </div>
-            </div>
-            <!-- Large weather icon (using an SVG for high quality) -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400">
-                <circle cx="12" cy="12" r="6"/>
-                <path d="M12 2v2"/>
-                <path d="M12 20v2"/>
-                <path d="m4.93 4.93 1.41 1.41"/>
-                <path d="m17.66 17.66 1.41 1.41"/>
-                <path d="M2 12h2"/>
-                <path d="M20 12h2"/>
-                <path d="m6.34 17.66-1.41 1.41"/>
-                <path d="m19.07 4.93-1.41 1.41"/>
-            </svg>
-        </div>
-
-        <!-- Detailed Metrics -->
-        <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+            </section>
             
-            <div class="data-point pb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M16 8v5a6 6 0 0 0 4 5l-2 2h-6l-2-2a6 6 0 0 0 4-5V8a4 4 0 1 0-8 0v5a6 6 0 0 0 4 5l-2 2h-6l-2-2a6 6 0 0 0 4-5V8"/></svg>
-                <div>
-                    <p class="text-gray-400">Wind</p>
-                    <p class="font-medium">E 7 km/h</p>
+            <!-- 7. City Hazard Map -->
+            <section>
+                <h2 class="text-xl font-bold text-white mb-4">
+                    <i class="fa-solid fa-map-location-dot mr-2 text-red-500"></i> Hazard Map
+                </h2>
+                <div class="bg-gray-800 rounded-xl shadow-2xl border-2 border-gray-700 overflow-hidden">
+                    <div class="relative w-full" style="height: 400px;">
+                        <iframe 
+                            src="https://hazardhunter.georisk.gov.ph/map" 
+                            title="Philippine Hazard Hunter Map" 
+                            class="w-full h-full border-none" 
+                            allowfullscreen 
+                            loading="lazy">
+                            <div class="p-8 text-center bg-gray-900 flex flex-col justify-center items-center h-full">
+                                <p class="text-lg text-gray-300 mb-4">
+                                    <i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-2"></i> 
+                                    The external website restricts direct embedding.
+                                </p>
+                                <a href="https://hazardhunter.georisk.gov.ph/map" target="_blank" 
+                                   class="inline-block px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg uppercase tracking-wide transition duration-300 transform hover:scale-105 shadow-lg">
+                                    <i class="fa-solid fa-up-right-from-square mr-2"></i> View Map in New Tab
+                                </a>
+                            </div>
+                        </iframe>
+                    </div>
+                    
+                    <div class="p-4 bg-gray-700 border-t border-gray-600">
+                        <p class="text-sm text-gray-400 text-center">
+                            Map data provided by HazardHunter, Philippine Government
+                        </p>
+                    </div>
                 </div>
-            </div>
-
-            <div class="data-point pb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/><path d="M8 12.8a4 4 0 1 1 8 0v.7A4 4 0 0 1 12 18h-1a4 4 0 0 1-4-4v-1.5"/></svg>
-                <div>
-                    <p class="text-gray-400">Humidity</p>
-                    <p class="font-medium">78%</p>
-                </div>
-            </div>
-
-            <div class="data-point pb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M12 20a8 8 0 0 0 8-8V7a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v5a8 8 0 0 0 8 8Z"/><path d="M8 17a4 4 0 1 1 8 0"/></svg>
-                <div>
-                    <p class="text-gray-400">Pressure</p>
-                    <p class="font-medium">1012 hPa</p>
-                </div>
-            </div>
-
-            <div class="data-point pb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-cyan-400"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <div>
-                    <p class="text-gray-400">UV Index</p>
-                    <p class="font-medium">Moderate (5)</p>
-                </div>
-            </div>
-            
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-gray-700/50">
-            <!-- Source Credit Link -->
-            <p class="text-xs text-gray-500 mb-2">
-                Live data sourced from:
-            </p>
-            <a href="https://www.accuweather.com/en/ph/mati-city/262967/weather-forecast/262967" target="_blank" class="flex items-center text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors">
-                <i class="fas fa-external-link-alt text-xs mr-2"></i> AccuWeather - Mati City, Philippines
-            </a>
-            <p class="text-xs text-red-400 mt-2">
-                *The data shown above is a simulation and not real-time due to third-party website restrictions.*
-            </p>
-        </div>
-
-    </div>
-            
-            <!-- 7. City Hazard Map (Static Image Placeholder) -->
-            <section class="max-w-4xl mx-auto p-4 md:p-8 bg-gray-900">
-    <h2 class="text-3xl font-bold text-white mb-6">
-        <i class="fa-solid fa-map-location-dot mr-3 text-red-500"></i> Hazard Map
-    </h2>
-    <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-        <!--
-        Attempting to embed the external map via iframe.
-        Note: The success of this depends on the target site's security headers (X-Frame-Options/CSP).
-        A fallback message is included inside the iframe for security restrictions.
-        -->
-        <div class="relative w-full" style="height: 480px;">
-            <iframe 
-                src="https://hazardhunter.georisk.gov.ph/map" 
-                title="Philippine Hazard Hunter Map" 
-                class="w-full h-full border-none" 
-                allowfullscreen 
-                loading="lazy">
-                
-                <!-- Fallback content if the browser blocks the iframe -->
-                <div class="p-8 text-center bg-gray-900 flex flex-col justify-center items-center h-full">
-                    <p class="text-lg text-gray-300 mb-4">
-                        <i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-2"></i> 
-                        The external website restricts direct embedding.
-                    </p>
-                    <a href="https://hazardhunter.georisk.gov.ph/map" target="_blank" 
-                       class="inline-block px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg uppercase tracking-wide transition duration-300 transform hover:scale-[1.05] shadow-lg">
-                        <i class="fa-solid fa-up-right-from-square mr-2"></i> View Map in New Tab
-                    </a>
-                </div>
-            </iframe>
-        </div>
-        
-        <div class="p-4 bg-gray-700 border-t border-gray-600">
-            <p class="text-sm text-gray-400 text-center">
-                Map data provided by HazardHunter, an initiative of the Philippine Government.
-            </p>
-        </div>
-    </div>
-</section>
+            </section>
 
         </div>
     </div>

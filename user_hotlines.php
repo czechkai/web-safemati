@@ -1,28 +1,43 @@
 <?php 
-    include 'user_header.php'; 
+    include 'user_header.php';
+    require_once 'db_connect.php';
+    
+    $user_id = $_SESSION['user_id'];
+    
+    // Get user's favorited hotlines
+    $favorites_query = "SELECT hotline_id FROM user_favorite_hotlines WHERE user_id = ?";
+    $favorites_stmt = $conn->prepare($favorites_query);
+    $favorites_stmt->bind_param("i", $user_id);
+    $favorites_stmt->execute();
+    $favorites_result = $favorites_stmt->get_result();
+    $user_favorites = array();
+    while ($row = $favorites_result->fetch_assoc()) {
+        $user_favorites[] = $row['hotline_id'];
+    }
+    $favorites_stmt->close();
 
     // --- Hotline Data Structure ---
-    $hotlines = [
+    $hotlines = array(
         // Police
-        ['name' => 'Mati City Police Station', 'number' => '911', 'category' => 'Police', 'icon' => 'fa-shield-halved', 'color' => 'blue-500', 'is_favorite' => true],
-        ['name' => 'Mati Traffic Management', 'number' => '082-822-1234', 'category' => 'Police', 'icon' => 'fa-car-side', 'color' => 'blue-400', 'is_favorite' => false],
+        array('id' => 1, 'name' => 'Mati City Police Station', 'number' => '911', 'category' => 'Police', 'icon' => 'fa-shield-halved', 'color' => 'blue-500'),
+        array('id' => 2, 'name' => 'Mati Traffic Management', 'number' => '082-822-1234', 'category' => 'Police', 'icon' => 'fa-car-side', 'color' => 'blue-400'),
         // Fire
-        ['name' => 'Bureau of Fire Protection - Mati', 'number' => '160', 'category' => 'Fire', 'icon' => 'fa-fire-extinguisher', 'color' => 'orange-500', 'is_favorite' => true],
+        array('id' => 3, 'name' => 'Bureau of Fire Protection - Mati', 'number' => '160', 'category' => 'Fire', 'icon' => 'fa-fire-extinguisher', 'color' => 'orange-500'),
         // Medical
-        ['name' => 'Mati Doctors Hospital', 'number' => '082-823-5678', 'category' => 'Medical', 'icon' => 'fa-kit-medical', 'color' => 'red-500', 'is_favorite' => true],
-        ['name' => 'Provincial Health Office', 'number' => '082-823-8765', 'category' => 'Medical', 'icon' => 'fa-stethoscope', 'color' => 'red-400', 'is_favorite' => false],
+        array('id' => 4, 'name' => 'Mati Doctors Hospital', 'number' => '082-823-5678', 'category' => 'Medical', 'icon' => 'fa-kit-medical', 'color' => 'red-500'),
+        array('id' => 5, 'name' => 'Provincial Health Office', 'number' => '082-823-8765', 'category' => 'Medical', 'icon' => 'fa-stethoscope', 'color' => 'red-400'),
         // Rescue
-        ['name' => 'Mati CDRRMO (Disaster Office)', 'number' => '911', 'category' => 'Rescue', 'icon' => 'fa-life-ring', 'color' => 'green-500', 'is_favorite' => false],
-        ['name' => 'Philippine Coast Guard - Mati', 'number' => '082-821-1122', 'category' => 'Rescue', 'icon' => 'fa-anchor', 'color' => 'green-400', 'is_favorite' => false],
+        array('id' => 6, 'name' => 'Mati CDRRMO (Disaster Office)', 'number' => '911', 'category' => 'Rescue', 'icon' => 'fa-life-ring', 'color' => 'green-500'),
+        array('id' => 7, 'name' => 'Philippine Coast Guard - Mati', 'number' => '082-821-1122', 'category' => 'Rescue', 'icon' => 'fa-anchor', 'color' => 'green-400'),
         // Utilities
-        ['name' => 'Davao Oriental Electric Coop (DORECO)', 'number' => '082-824-9000', 'category' => 'Utilities', 'icon' => 'fa-bolt', 'color' => 'yellow-500', 'is_favorite' => false],
-        ['name' => 'Mati Water District (MWD)', 'number' => '082-825-1000', 'category' => 'Utilities', 'icon' => 'fa-faucet-drip', 'color' => 'sky-500', 'is_favorite' => false],
+        array('id' => 8, 'name' => 'Davao Oriental Electric Coop (DORECO)', 'number' => '082-824-9000', 'category' => 'Utilities', 'icon' => 'fa-bolt', 'color' => 'yellow-500'),
+        array('id' => 9, 'name' => 'Mati Water District (MWD)', 'number' => '082-825-1000', 'category' => 'Utilities', 'icon' => 'fa-faucet-drip', 'color' => 'sky-500'),
         // LGU
-        ['name' => 'Mati City Hall Information Desk', 'number' => '082-820-2020', 'category' => 'LGU / City Offices', 'icon' => 'fa-city', 'color' => 'purple-500', 'is_favorite' => false],
-    ];
+        array('id' => 10, 'name' => 'Mati City Hall Information Desk', 'number' => '082-820-2020', 'category' => 'LGU / City Offices', 'icon' => 'fa-city', 'color' => 'purple-500'),
+    );
 
     $categories = array_unique(array_column($hotlines, 'category'));
-    $favorites = array_filter($hotlines, function($h) { return $h['is_favorite']; });
+    $favorites = array_filter($hotlines, function($h) use ($user_favorites) { return in_array($h['id'], $user_favorites); });
 ?>
 
 <style>
@@ -101,9 +116,9 @@
                 <i class="fa-solid fa-star text-yellow-300 mr-2"></i>
                 Your Favorite Hotlines
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div id="favorites-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <?php foreach ($favorites as $fav): ?>
-                <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between">
+                <div class="favorite-card p-4 bg-gray-700 rounded-lg flex items-center justify-between" data-hotline-id="<?php echo $fav['id']; ?>">
                     <div>
                         <p class="text-white font-semibold text-sm"><?php echo htmlspecialchars($fav['name']); ?></p>
                         <a href="tel:<?php echo htmlspecialchars($fav['number']); ?>" class="text-2xl font-bold text-red-400 hover:text-red-300">
@@ -116,6 +131,12 @@
                 </div>
                 <?php endforeach; ?>
             </div>
+        </section>
+        <?php else: ?>
+        <section id="no-favorites-section" class="p-8 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-700 rounded-xl shadow-2xl mb-12 text-center">
+            <i class="fa-solid fa-star text-5xl text-gray-600 mb-4"></i>
+            <h2 class="text-xl font-bold text-white mb-2">No Favorite Hotlines Yet</h2>
+            <p class="text-gray-400">Click the star icon on any hotline card below to add it to your favorites</p>
         </section>
         <?php endif; ?>
 
@@ -157,44 +178,48 @@
             <div id="hotline-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 
                 <?php 
-                    foreach ($hotlines as $index => $line) {
+                    foreach ($hotlines as $line) {
+                        $line_id = $line['id'];
                         $line_category = htmlspecialchars($line['category']);
                         $line_name = htmlspecialchars($line['name']);
                         $line_number = htmlspecialchars($line['number']);
                         $line_icon = htmlspecialchars($line['icon']);
                         $line_color = htmlspecialchars($line['color']);
-                        $is_favorite = $line['is_favorite'];
+                        $is_favorite = in_array($line_id, $user_favorites);
                 ?>
                     <div 
-                        class="hotline-card p-6 rounded-xl shadow-xl"
+                        class="hotline-card p-6 rounded-xl shadow-xl flex flex-col"
                         data-name="<?= strtolower($line_name) ?>"
                         data-number="<?= $line_number ?>"
                         data-category="<?= $line_category ?>"
+                        data-hotline-id="<?= $line_id ?>"
                     >
-                        <div class="flex items-start justify-between">
+                        <div class="flex items-start justify-between mb-4">
                             <span class="text-xs font-semibold px-3 py-1 rounded-full bg-red-600 text-white shadow-md">
                                 <?= $line_category ?>
                             </span>
                             <!-- Favorite Star Button -->
                             <button class="favorite-btn text-2xl <?php echo $is_favorite ? 'active' : 'text-gray-500'; ?>" 
-                                    data-hotline-id="<?= $index ?>"
+                                    data-hotline-id="<?= $line_id ?>"
                                     aria-label="Toggle favorite">
                                 <i class="fa-solid fa-star"></i>
                             </button>
                         </div>
                         
-                        <h3 class="text-xl font-bold text-white mt-4 mb-2"><?= $line_name ?></h3>
-                        
-                        <!-- Contact Number (Clickable for Mobile) -->
-                        <a href="tel:<?= $line_number ?>" class="text-4xl font-extrabold text-red-400 block tracking-wide hover:text-red-300 transition-colors">
-                            <?= $line_number ?>
-                        </a>
+                        <div class="flex-grow">
+                            <h3 class="text-xl font-bold text-white mb-2"><?= $line_name ?></h3>
+                            
+                            <!-- Contact Number (Clickable for Mobile) -->
+                            <a href="tel:<?= $line_number ?>" class="text-4xl font-extrabold text-red-400 block tracking-wide hover:text-red-300 transition-colors mb-4">
+                                <?= $line_number ?>
+                            </a>
+                        </div>
 
-                        <!-- Action Buttons -->
-                        <div class="mt-4 flex space-x-3">
+                        <!-- Action Buttons - Always at bottom -->
+                        <div class="mt-auto flex space-x-3">
                             <!-- Copy Button -->
                             <button 
-                                class="copy-btn flex-1 p-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-red-600 hover:text-white transition font-semibold"
+                                class="copy-btn flex-1 p-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-red-600 hover:text-white transition font-semibold flex items-center justify-center"
                                 data-number="<?= $line_number ?>"
                                 aria-label="Copy phone number"
                             >
@@ -204,7 +229,7 @@
                             <!-- Call Button (Main Action) -->
                             <a 
                                 href="tel:<?= $line_number ?>" 
-                                class="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-center font-semibold"
+                                class="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-center font-semibold flex items-center justify-center"
                                 aria-label="Call emergency number"
                             >
                                 <i class="fa-solid fa-phone mr-2"></i>Call Now
@@ -297,23 +322,141 @@
             });
         });
 
-        // Favorite Button Functionality
+        // Favorite Button Functionality with Real-Time Updates
         favoriteButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                button.classList.toggle('active');
-                const hotlineId = button.dataset.hotlineId;
+            button.addEventListener('click', function() {
+                const hotlineId = this.dataset.hotlineId;
+                const hotlineCard = this.closest('.hotline-card');
+                const hotlineName = hotlineCard.querySelector('h3').textContent;
+                const hotlineNumber = hotlineCard.dataset.number;
                 
-                // Here you would send an AJAX request to save favorite status
-                console.log(`Toggle favorite for hotline ID: ${hotlineId}`);
+                const formData = new FormData();
+                formData.append('hotline_id', hotlineId);
                 
-                // Optional: Show feedback
-                const isFavorite = button.classList.contains('active');
-                button.style.transform = 'scale(1.3)';
-                setTimeout(() => {
-                    button.style.transform = 'scale(1)';
-                }, 200);
+                fetch('ajax/toggle_favorite.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Toggle visual state
+                        this.classList.toggle('active');
+                        
+                        // Animation feedback
+                        this.style.transform = 'scale(1.3)';
+                        setTimeout(() => {
+                            this.style.transform = 'scale(1)';
+                        }, 200);
+                        
+                        // Update favorites section
+                        updateFavoritesSection();
+                        
+                        // Show toast notification
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error updating favorite', 'error');
+                });
             });
         });
+        
+        // Update favorites section dynamically
+        function updateFavoritesSection() {
+            // Collect all favorited hotlines
+            const favoritedCards = document.querySelectorAll('.hotline-card');
+            const favorites = [];
+            
+            favoritedCards.forEach(card => {
+                const starBtn = card.querySelector('.favorite-btn');
+                if (starBtn && starBtn.classList.contains('active')) {
+                    const hotlineId = card.dataset.hotlineId;
+                    const hotlineName = card.querySelector('h3').textContent;
+                    const hotlineNumber = card.dataset.number;
+                    favorites.push({ id: hotlineId, name: hotlineName, number: hotlineNumber });
+                }
+            });
+            
+            // Update or create favorites section
+            let favSection = document.querySelector('#favorites-container');
+            let noFavSection = document.querySelector('#no-favorites-section');
+            
+            if (favorites.length > 0) {
+                // Hide no-favorites message
+                if (noFavSection) {
+                    noFavSection.style.display = 'none';
+                }
+                
+                // Create favorites section if it doesn't exist
+                if (!favSection) {
+                    const searchSection = document.querySelector('section.p-6.bg-gray-800');
+                    const newSection = document.createElement('section');
+                    newSection.className = 'p-6 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-red-500 rounded-xl shadow-2xl mb-12';
+                    newSection.innerHTML = `
+                        <h2 class="text-2xl font-bold text-white mb-4">
+                            <i class="fa-solid fa-star text-yellow-300 mr-2"></i>
+                            Your Favorite Hotlines
+                        </h2>
+                        <div id="favorites-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+                    `;
+                    searchSection.parentNode.insertBefore(newSection, searchSection);
+                    favSection = document.querySelector('#favorites-container');
+                }
+                
+                // Update favorites list
+                favSection.innerHTML = favorites.map(fav => `
+                    <div class="favorite-card p-4 bg-gray-700 rounded-lg flex items-center justify-between" data-hotline-id="${fav.id}">
+                        <div>
+                            <p class="text-white font-semibold text-sm">${fav.name}</p>
+                            <a href="tel:${fav.number}" class="text-2xl font-bold text-red-400 hover:text-red-300">
+                                ${fav.number}
+                            </a>
+                        </div>
+                        <a href="tel:${fav.number}" class="p-3 bg-red-600 hover:bg-red-700 rounded-full transition">
+                            <i class="fa-solid fa-phone text-white"></i>
+                        </a>
+                    </div>
+                `).join('');
+                
+                // Show favorites section
+                if (favSection.parentElement) {
+                    favSection.parentElement.style.display = 'block';
+                }
+            } else {
+                // Show no-favorites message
+                if (favSection && favSection.parentElement) {
+                    favSection.parentElement.style.display = 'none';
+                }
+                if (noFavSection) {
+                    noFavSection.style.display = 'block';
+                }
+            }
+        }
+        
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+            const toast = document.createElement('div');
+            toast.className = `fixed top-24 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-2xl z-50 transform transition-all duration-300 translate-x-full`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fa-solid fa-${icon} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
         // Initial filter
         filterHotlines();

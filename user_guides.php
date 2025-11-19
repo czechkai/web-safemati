@@ -1,5 +1,33 @@
 <?php 
-    include 'user_header.php'; 
+    include 'user_header.php';
+    require_once 'db_connect.php';
+    
+    $user_id = $_SESSION['user_id'];
+    
+    // Get user's guide progress
+    $progress_query = "SELECT COUNT(*) as total_completed FROM user_guide_progress WHERE user_id = ? AND is_completed = 1";
+    $progress_stmt = $conn->prepare($progress_query);
+    $progress_stmt->bind_param("i", $user_id);
+    $progress_stmt->execute();
+    $progress_result = $progress_stmt->get_result();
+    $progress_data = $progress_result->fetch_assoc();
+    $completed_count = $progress_data['total_completed'];
+    $progress_stmt->close();
+    
+    $total_guides = 6;
+    $completion_percentage = ($completed_count / $total_guides) * 100;
+    
+    // Check which guides are completed
+    $completed_guides_query = "SELECT guide_id FROM user_guide_progress WHERE user_id = ? AND is_completed = 1";
+    $completed_stmt = $conn->prepare($completed_guides_query);
+    $completed_stmt->bind_param("i", $user_id);
+    $completed_stmt->execute();
+    $completed_result = $completed_stmt->get_result();
+    $completed_guides = array();
+    while ($row = $completed_result->fetch_assoc()) {
+        $completed_guides[] = $row['guide_id'];
+    }
+    $completed_stmt->close();
 ?>
 
 <style>
@@ -78,12 +106,12 @@
                         <i class="fa-solid fa-chart-line text-red-500 mr-2"></i>
                         Your Safety Preparedness
                     </h3>
-                    <span class="text-2xl font-extrabold text-red-500">3/6</span>
+                    <span class="text-2xl font-extrabold text-red-500"><?php echo $completed_count; ?>/<?php echo $total_guides; ?></span>
                 </div>
                 <div class="w-full bg-gray-700 rounded-full h-3 mb-2">
-                    <div class="bg-gradient-to-r from-red-600 to-red-500 h-3 rounded-full" style="width: 50%"></div>
+                    <div class="bg-gradient-to-r from-red-600 to-red-500 h-3 rounded-full transition-all duration-500" style="width: <?php echo $completion_percentage; ?>%"></div>
                 </div>
-                <p class="text-sm text-gray-400">You've completed 3 out of 6 essential guides. Keep learning!</p>
+                <p class="text-sm text-gray-400">You've completed <?php echo $completed_count; ?> out of <?php echo $total_guides; ?> essential guides. Keep learning!</p>
             </div>
             
             <!-- Grid container for Main Content and Sidebar -->
@@ -96,74 +124,95 @@
                     <!-- Guide Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         
-                        <!-- Guide Card 1: Flood - COMPLETED -->
-                        <div class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative">
+                        <!-- Guide Card 1: Flood -->
+                        <a href="user_guide_flood.php" class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative block">
+                            <?php if (in_array(1, $completed_guides)): ?>
                             <div class="absolute top-4 right-4">
                                 <i class="fa-solid fa-circle-check text-3xl text-green-500"></i>
                             </div>
+                            <?php endif; ?>
                             <i class="fa-solid fa-water text-5xl text-blue-400 mb-4"></i>
                             <h3 class="text-2xl font-bold text-white mb-3">Flood Safety Guide</h3>
                             <p class="text-gray-400 mb-5 text-base">Learn how to prepare your home and family, navigate high-water situations, and what to do after the water recedes.</p>
-                            <a href="#" class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
-                                Review Guide <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
-                            </a>
-                        </div>
+                            <span class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
+                                <?php echo in_array(1, $completed_guides) ? 'Review Guide' : 'Start Learning'; ?> <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                            </span>
+                        </a>
 
-                        <!-- Guide Card 2: Fire - COMPLETED -->
-                        <div class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative">
+                        <!-- Guide Card 2: Fire -->
+                        <a href="user_guide_fire.php" class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative block">
+                            <?php if (in_array(2, $completed_guides)): ?>
                             <div class="absolute top-4 right-4">
                                 <i class="fa-solid fa-circle-check text-3xl text-green-500"></i>
                             </div>
+                            <?php endif; ?>
                             <i class="fa-solid fa-fire text-5xl text-orange-500 mb-4"></i>
                             <h3 class="text-2xl font-bold text-white mb-3">Fire Prevention & Response</h3>
                             <p class="text-gray-400 mb-5 text-base">Essential tips for preventing residential fires and a step-by-step guide for safe evacuation and emergency calls.</p>
-                            <a href="#" class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
-                                Review Guide <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
-                            </a>
-                        </div>
+                            <span class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
+                                <?php echo in_array(2, $completed_guides) ? 'Review Guide' : 'Start Learning'; ?> <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                            </span>
+                        </a>
                         
-                        <!-- Guide Card 3: Earthquake - COMPLETED -->
-                        <div class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative">
+                        <!-- Guide Card 3: Earthquake -->
+                        <a href="user_guide_earthquake.php" class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative block">
+                            <?php if (in_array(3, $completed_guides)): ?>
                             <div class="absolute top-4 right-4">
                                 <i class="fa-solid fa-circle-check text-3xl text-green-500"></i>
                             </div>
+                            <?php endif; ?>
                             <i class="fa-solid fa-house-crack text-5xl text-yellow-500 mb-4"></i>
                             <h3 class="text-2xl font-bold text-white mb-3">Earthquake Preparedness</h3>
                             <p class="text-gray-400 mb-5 text-base">The critical 'Drop, Cover, and Hold On' protocol, what to do before, during, and immediately after a tremor hits.</p>
-                            <a href="#" class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
-                                Review Guide <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
-                            </a>
-                        </div>
+                            <span class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
+                                <?php echo in_array(3, $completed_guides) ? 'Review Guide' : 'Start Learning'; ?> <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                            </span>
+                        </a>
 
-                        <!-- Guide Card 4: Typhoon - NOT COMPLETED -->
-                        <div class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50">
+                        <!-- Guide Card 4: Typhoon -->
+                        <a href="user_guide_typhoon.php" class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative block">
+                            <?php if (in_array(4, $completed_guides)): ?>
+                            <div class="absolute top-4 right-4">
+                                <i class="fa-solid fa-circle-check text-3xl text-green-500"></i>
+                            </div>
+                            <?php endif; ?>
                             <i class="fa-solid fa-wind text-5xl text-sky-400 mb-4"></i>
                             <h3 class="text-2xl font-bold text-white mb-3">Typhoon & Storm Guide</h3>
                             <p class="text-gray-400 mb-5 text-base">Understanding PAGASA storm signals, securing your property, and finding the nearest evacuation centers in Mati.</p>
-                            <a href="#" class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
-                                Start Learning <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
-                            </a>
-                        </div>
+                            <span class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
+                                <?php echo in_array(4, $completed_guides) ? 'Review Guide' : 'Start Learning'; ?> <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                            </span>
+                        </a>
                         
-                        <!-- Guide Card 5: Landslide - NOT COMPLETED -->
-                        <div class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50">
+                        <!-- Guide Card 5: Landslide -->
+                        <a href="user_guide_landslide.php" class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative block">
+                            <?php if (in_array(5, $completed_guides)): ?>
+                            <div class="absolute top-4 right-4">
+                                <i class="fa-solid fa-circle-check text-3xl text-green-500"></i>
+                            </div>
+                            <?php endif; ?>
                             <i class="fa-solid fa-hill-avalanche text-5xl text-gray-500 mb-4"></i>
                             <h3 class="text-2xl font-bold text-white mb-3">Landslide Awareness</h3>
                             <p class="text-gray-400 mb-5 text-base">Identifying warning signs in unstable slopes and hillsides, and the immediate evacuation procedures to follow.</p>
-                            <a href="#" class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
-                                Start Learning <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
-                            </a>
-                        </div>
+                            <span class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
+                                <?php echo in_array(5, $completed_guides) ? 'Review Guide' : 'Start Learning'; ?> <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                            </span>
+                        </a>
 
-                        <!-- Guide Card 6: Tsunami - NOT COMPLETED -->
-                        <div class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50">
+                        <!-- Guide Card 6: Tsunami -->
+                        <a href="user_guide_tsunami.php" class="guide-card p-6 rounded-lg shadow-xl hover:shadow-red-800/50 relative block">
+                            <?php if (in_array(6, $completed_guides)): ?>
+                            <div class="absolute top-4 right-4">
+                                <i class="fa-solid fa-circle-check text-3xl text-green-500"></i>
+                            </div>
+                            <?php endif; ?>
                             <i class="fa-solid fa-wave-square text-5xl text-teal-400 mb-4"></i>
                             <h3 class="text-2xl font-bold text-white mb-3">Tsunami Evacuation</h3>
                             <p class="text-gray-400 mb-5 text-base">Specific guidance for coastal barangays on recognizing natural warnings and moving to designated high ground.</p>
-                            <a href="#" class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
-                                Start Learning <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
-                            </a>
-                        </div>
+                            <span class="inline-flex items-center text-red-400 font-semibold hover:text-red-300 transition-colors">
+                                <?php echo in_array(6, $completed_guides) ? 'Review Guide' : 'Start Learning'; ?> <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+                            </span>
+                        </a>
                         
                     </div>
                 </div>
