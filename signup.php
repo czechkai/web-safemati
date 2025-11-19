@@ -109,59 +109,9 @@
                     throw new Exception('Database connection not available ($conn is missing or invalid).');
                 }
                 
-                // --- QUICK SCHEMA CHECK (using mysqli for table/column creation) ---
-                // NOTE: This logic is generally discouraged in production but kept for development convenience.
-                $res = $conn->query("SHOW TABLES LIKE 'users'");
-                if (!$res || $res->num_rows === 0) {
-                    // Create table if it doesn't exist, including all necessary columns
-                    $create = "CREATE TABLE IF NOT EXISTS users (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        first_name VARCHAR(150) NOT NULL,
-                        middle_name VARCHAR(150),
-                        last_name VARCHAR(150) NOT NULL,
-                        email VARCHAR(255) NOT NULL UNIQUE,
-                        contact_number VARCHAR(50),
-                        house_street_subd VARCHAR(255),
-                        barangay VARCHAR(100),
-                        password_hash VARCHAR(255) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-                    if (!$conn->query($create)) {
-                        throw new Exception('Failed to create users table: ' . $conn->error);
-                    }
-                } else {
-                    // Check and add missing columns if the table exists but is outdated.
-
-                    // Check and add house_street_subd column
-                    $colres = $conn->query("SHOW COLUMNS FROM users LIKE 'house_street_subd'");
-                    if (!$colres || $colres->num_rows === 0) {
-                        if (!$conn->query("ALTER TABLE users ADD COLUMN house_street_subd VARCHAR(255)")) {
-                            throw new Exception('Failed to add column house_street_subd: ' . $conn->error);
-                        }
-                    }
-                    
-                    // Check and add barangay column
-                    $colres2 = $conn->query("SHOW COLUMNS FROM users LIKE 'barangay'");
-                    if (!$colres2 || $colres2->num_rows === 0) {
-                        if (!$conn->query("ALTER TABLE users ADD COLUMN barangay VARCHAR(100)")) {
-                            throw new Exception('Failed to add column barangay: ' . $conn->error);
-                        }
-                    }
-                    
-                    // FIX FOR THE CURRENT ERROR: Check and add password_hash column
-                    $colres3 = $conn->query("SHOW COLUMNS FROM users LIKE 'password_hash'");
-                    if (!$colres3 || $colres3->num_rows === 0) {
-                        // Assuming you want it to be NOT NULL as it is crucial for security.
-                        if (!$conn->query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL AFTER barangay")) {
-                            throw new Exception('Failed to add column password_hash: ' . $conn->error);
-                        }
-                    }
-                }
-                // --- END QUICK SCHEMA CHECK ---
-
                 // --- A. Check for duplicate email (SECURE: using mysqli prepared statement) ---
                 $exists = false;
-                $stmt = $conn->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+                $stmt = $conn->prepare('SELECT user_id FROM users WHERE email = ? LIMIT 1');
                 if (!$stmt) {
                      throw new Exception('Prepare select statement failed: ' . $conn->error);
                 }
@@ -177,19 +127,27 @@
                     // --- B. Hash Password (SECURE: using password_hash) ---
                     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                     
+                    // Combine name fields into single name field
+                    $fullName = trim($firstName . ' ' . $middleName . ' ' . $lastName);
+                    $fullName = preg_replace('/\s+/', ' ', $fullName); // Remove extra spaces
+                    
+                    // Combine address fields
+                    $fullAddress = $houseStreetSubd;
+                    
                     // --- C. Insert New User (SECURE: using mysqli prepared statement) ---
+                    // Match the SafeMati database schema: user_id, name, email, password, role, barangay, phone_number
                     $stmt = $conn->prepare('
                         INSERT INTO users 
-                        (first_name, middle_name, last_name, email, contact_number, house_street_subd, barangay, password_hash) 
+                        (name, email, password, barangay, phone_number) 
                         VALUES 
-                        (?, ?, ?, ?, ?, ?, ?, ?)
+                        (?, ?, ?, ?, ?)
                     ');
                     if (!$stmt) {
                          throw new Exception('Prepare insert statement failed: ' . $conn->error);
                     }
                     
-                    // Bind parameters: ssssssss = 8 strings
-                    $stmt->bind_param('ssssssss', $firstName, $middleName, $lastName, $email, $contactNumber, $houseStreetSubd, $barangay, $passwordHash);
+                    // Bind parameters: sssss = 5 strings
+                    $stmt->bind_param('sssss', $fullName, $email, $passwordHash, $barangay, $contactNumber);
                     $stmt->execute();
                     $stmt->close(); // Close insert statement
 

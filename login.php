@@ -23,12 +23,13 @@
             try {
                 $user = null;
                 // --- SECURE: Use prepared statements to fetch the user by email ---
+                // Match SafeMati database schema: user_id, name, email, password, barangay
                 if (isset($pdo) && $pdo) {
-                    $stmt = $pdo->prepare('SELECT id, first_name, last_name, email, password_hash FROM users WHERE email = :email LIMIT 1');
+                    $stmt = $pdo->prepare('SELECT user_id, name, email, password, barangay FROM users WHERE email = :email LIMIT 1');
                     $stmt->execute([':email' => $email_input]);
                     $user = $stmt->fetch();
                 } else {
-                    $stmt = $conn->prepare('SELECT id, first_name, last_name, email, password_hash FROM users WHERE email = ? LIMIT 1');
+                    $stmt = $conn->prepare('SELECT user_id, name, email, password, barangay FROM users WHERE email = ? LIMIT 1');
                     $stmt->bind_param('s', $email_input);
                     $stmt->execute();
                     $res = $stmt->get_result();
@@ -42,16 +43,17 @@
                 $pwOk = false;
                 if ($user) {
                     // --- SECURE: Verify the password against the stored hash ---
-                    $pwOk = password_verify($password_input, $user['password_hash']);
+                    $pwOk = password_verify($password_input, $user['password']);
                     error_log('Login password_verify for ' . $email_input . ': ' . ($pwOk ? 'OK' : 'FAILED'));
                 }
 
                 if ($user && $pwOk) {
                     // Auth success — start session and set session vars
                     if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_id'] = $user['user_id'];
                     $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                    $_SESSION['user_name'] = $user['name'];
+                    $_SESSION['user_barangay'] = $user['barangay'];
 
                     // Remember me: extend session cookie lifetime if requested
                     if (!empty($_POST['rememberMe'])) {
@@ -61,7 +63,7 @@
                     }
 
                     // Redirect to home/dashboard
-                    header('Location: index.php');
+                    header('Location: user_dashboard.php');
                     exit;
                 } else {
                     $message = 'Invalid email or password. Please try again.';

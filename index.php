@@ -59,7 +59,7 @@
 <html>
     <body>
         
-    
+    <title>SafeMati</title>
     <!-- 1️⃣ Hero Section -->
     <!-- min-h-screen ensures full viewport height -->
     <section class="hero-background min-h-screen flex items-center justify-center text-center py-20 rounded-xl shadow-2xl">
