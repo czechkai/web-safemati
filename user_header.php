@@ -126,7 +126,7 @@ function is_active($page, $current) {
                 <!-- ⬅️ Left Side: Logo/Branding -->
                 <div class="flex-shrink-0 flex items-center">
                     <!-- Logo - Using requested file path and circular style -->
-                    <a href="dashboard.php" class="flex items-center">
+                    <a href="user_dashboard.php" class="flex items-center">
                         <img src="assets/safemati-logo.png" alt="SafeMati Logo" 
                              class="h-12 w-auto rounded-full mr-3">
                     </a>
@@ -134,8 +134,8 @@ function is_active($page, $current) {
 
                 <!-- Center: Desktop Navigation (Hidden on Mobile) -->
                 <div class="hidden sm:ml-6 sm:flex sm:space-x-8 h-full items-center">
-                    <!-- Dashboard Link (Default Active) -->
-                    <a href="dashboard.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                    <!-- Dashboard Link -->
+                    <a href="user_dashboard.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
                         <?php echo is_active('user_dashboard.php', $current_page); ?>">
                         Dashboard
                     </a>
@@ -144,15 +144,15 @@ function is_active($page, $current) {
                         <?php echo is_active('user_alerts.php', $current_page); ?>">
                         Alerts
                     </a>
-                    <!-- Hotlines Link -->
-                    <a href="user_hotlines.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
-                        <?php echo is_active('user_hotlines.php', $current_page); ?>">
-                        Hotlines
-                    </a>
-                    <!-- Guides Link -->
+                    <!-- Disaster Guides Link -->
                     <a href="user_guides.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
                         <?php echo is_active('user_guides.php', $current_page); ?>">
-                        Guides
+                        Disaster Guides
+                    </a>
+                    <!-- Emergency Hotlines Link -->
+                    <a href="user_hotlines.php" class="inline-flex items-center h-full px-1 pt-1 text-sm font-medium transition duration-200 
+                        <?php echo is_active('user_hotlines.php', $current_page); ?>">
+                        Emergency Hotlines
                     </a>
                 </div>
 
@@ -224,21 +224,21 @@ function is_active($page, $current) {
                 </a>
 
                 <!-- Mobile Navigation Links -->
-                <a href="dashboard.php" class="block rounded-md px-3 py-2 text-base font-medium 
-                    <?php echo is_active('dashboard.php', $current_page); ?> hover:bg-gray-800">
+                <a href="user_dashboard.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('user_dashboard.php', $current_page); ?> hover:bg-gray-800">
                     <i class="fa-solid fa-house-user mr-2"></i> Dashboard
                 </a>
                 <a href="user_alerts.php" class="block rounded-md px-3 py-2 text-base font-medium 
                     <?php echo is_active('user_alerts.php', $current_page); ?> hover:bg-gray-800">
                     <i class="fa-solid fa-bell mr-2"></i> Alerts
                 </a>
-                <a href="user_hotlines.php" class="block rounded-md px-3 py-2 text-base font-medium 
-                    <?php echo is_active('user_hotlines.php', $current_page); ?> hover:bg-gray-800">
-                    <i class="fa-solid fa-phone-alt mr-2"></i> Hotlines
-                </a>
                 <a href="user_guides.php" class="block rounded-md px-3 py-2 text-base font-medium 
                     <?php echo is_active('user_guides.php', $current_page); ?> hover:bg-gray-800">
-                    <i class="fa-solid fa-book-open mr-2"></i> Guides
+                    <i class="fa-solid fa-book-open mr-2"></i> Disaster Guides
+                </a>
+                <a href="user_hotlines.php" class="block rounded-md px-3 py-2 text-base font-medium 
+                    <?php echo is_active('user_hotlines.php', $current_page); ?> hover:bg-gray-800">
+                    <i class="fa-solid fa-phone-alt mr-2"></i> Emergency Hotlines
                 </a>
 
                 <!-- Mobile Logout Button (Contextual) -->

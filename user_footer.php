@@ -16,9 +16,14 @@
                 <a href="#" aria-label="Facebook" class="text-gray-500 hover:text-red-500 transition duration-300">
                     <i class="fab fa-facebook-f"></i>
                 </a>
-                <a href="#" aria-label="Twitter" class="text-gray-500 hover:text-red-500 transition duration-300">
-                    <i class="fab fa-twitter"></i>
+
+                <a href="#" aria-label="Discord" class="text-gray-500 hover:text-red-500 transition duration-300">
+                    <i class="fa-brands fa-discord"></i>
                 </a>
+
+
+                <!-- <a href="#" class="text-red-500 hover:text-white transition duration-200 text-2xl" aria-label="Discord"><i class="fa-brands fa-discord"></i></a> -->
+
                 <a href="#" aria-label="Instagram" class="text-gray-500 hover:text-red-500 transition duration-300">
                     <i class="fab fa-instagram"></i>
                 </a>
