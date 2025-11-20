@@ -15,31 +15,31 @@
     ];
 
     // --- 3. LATEST ALERTS SECTION DATA (SIMULATED) ---
-    // Color borders: Flood=Blue, Fire=Red, Earthquake=Orange, Weather=Yellow
+    // Consistent red/gray theme for all alerts
     $latest_alerts = [
         [
             'title' => 'Flood Watch in Barangay Central',
             'category' => 'Flood',
             'datetime' => 'Issued: Nov 19, 2025 - 3:14 PM',
             'description' => 'Heavy rains expected in low-lying areas. Residents near rivers advised to monitor water levels.',
-            'color_class' => 'border-l-blue-500', // Blue
-            'category_class' => 'bg-blue-600/30 text-blue-300'
+            'color_class' => 'border-l-red-600',
+            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50'
         ],
         [
             'title' => 'Structural Fire near Public Market',
             'category' => 'Fire',
             'datetime' => 'Reported: Nov 19, 2025 - 1:05 PM',
             'description' => 'BFP teams are responding. Avoid the area near the public market for safety.',
-            'color_class' => 'border-l-red-600', // Red
-            'category_class' => 'bg-red-600/30 text-red-300'
+            'color_class' => 'border-l-red-600',
+            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50'
         ],
         [
             'title' => 'M 4.2 Earthquake Advisory',
             'category' => 'Earthquake',
             'datetime' => 'Recorded: Nov 18, 2025 - 10:00 AM',
             'description' => 'Minor tremor felt. No tsunami warning issued. Check buildings for cracks.',
-            'color_class' => 'border-l-orange-500', // Orange
-            'category_class' => 'bg-orange-orange-600/30 text-orange-300'
+            'color_class' => 'border-l-red-600',
+            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50'
         ],
     ];
 
@@ -94,18 +94,25 @@
             <h2 class="text-2xl font-bold text-white border-b border-red-700/50 pb-3 mb-6"><i class="fa-solid fa-bell-c text-red-500 mr-2"></i> Critical & Latest Alerts</h2>
 
             <?php foreach ($latest_alerts as $alert): ?>
-            <div class="bg-gray-800 p-6 rounded-xl shadow-xl border-l-8 <?= $alert['color_class']; ?> transition duration-200 hover:bg-gray-700/50 hover:shadow-2xl">
+            <div class="bg-gray-800 p-6 rounded-xl shadow-xl border-l-8 <?= $alert['color_class']; ?> transition duration-200 hover:bg-gray-700/50 hover:shadow-2xl flex flex-col min-h-[280px]">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-xl font-bold text-white"><?= $alert['title']; ?></h3>
-                    <span class="text-xs font-bold px-3 py-1 rounded-full <?= $alert['category_class']; ?> border border-current flex-shrink-0">
+                    <span class="text-xs font-bold px-3 py-1 rounded-full <?= $alert['category_class']; ?> border flex-shrink-0">
                         <?= $alert['category']; ?>
                     </span>
                 </div>
                 <p class="text-gray-400 text-sm italic mb-4"><?= $alert['datetime']; ?></p>
-                <p class="text-gray-300 mb-5 leading-relaxed"><?= $alert['description']; ?></p>
-                <a href="user_alert_detail.php?id=1" class="btn-gradient-sm inline-flex items-center text-sm font-bold px-4 py-2 rounded-lg transition duration-150 transform hover:scale-[1.03]">
-                    <i class="fa-solid fa-arrow-right mr-2"></i> Read Full Advisory
-                </a>
+                <div class="flex-grow">
+                    <p class="text-gray-300 mb-5 leading-relaxed"><?= $alert['description']; ?></p>
+                </div>
+                <div class="mt-auto flex gap-3">
+                    <a href="user_alert_detail.php?id=1" class="btn-gradient-sm inline-flex items-center text-sm font-bold px-4 py-2 rounded-lg transition duration-150 transform hover:scale-[1.03]">
+                        <i class="fa-solid fa-circle-info mr-2"></i> View Details
+                    </a>
+                    <button class="bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition duration-150 inline-flex items-center">
+                        <i class="fa-solid fa-shield-check mr-2"></i> Mark as Safe
+                    </button>
+                </div>
             </div>
             <?php endforeach; ?>
         </section>

@@ -60,19 +60,19 @@
         ],
     ];
 
-    // Helper data for mapping icons and colors
+    // Helper data for mapping icons and colors - Red/Gray/Black palette
     $alert_map = [
-        'Flood' => ['icon' => 'fa-water', 'color' => 'text-blue-500'],
-        'Fire' => ['icon' => 'fa-fire', 'color' => 'text-red-600'],
-        'Earthquake' => ['icon' => 'fa-house-crack', 'color' => 'text-yellow-600'],
-        'Landslide' => ['icon' => 'fa-mountain', 'color' => 'text-amber-700'],
-        'Typhoon' => ['icon' => 'fa-wind', 'color' => 'text-cyan-500'],
+        'Flood' => ['icon' => 'fa-water', 'color' => 'text-red-400'],
+        'Fire' => ['icon' => 'fa-fire', 'color' => 'text-red-500'],
+        'Earthquake' => ['icon' => 'fa-house-crack', 'color' => 'text-red-400'],
+        'Landslide' => ['icon' => 'fa-mountain', 'color' => 'text-gray-300'],
+        'Typhoon' => ['icon' => 'fa-wind', 'color' => 'text-red-300'],
     ];
 
     $severity_map = [
-        'Severe' => ['bg' => 'bg-red-600', 'text' => 'text-white'],
-        'Moderate' => ['bg' => 'bg-yellow-500', 'text' => 'text-gray-900'],
-        'Advisory' => ['bg' => 'bg-blue-500', 'text' => 'text-white'],
+        'Severe' => ['bg' => 'bg-red-600', 'text' => 'text-white', 'border' => '#ef4444'],
+        'Moderate' => ['bg' => 'bg-red-500', 'text' => 'text-white', 'border' => '#f87171'],
+        'Advisory' => ['bg' => 'bg-gray-600', 'text' => 'text-white', 'border' => '#9ca3af'],
     ];
 
     // Encode PHP data for JavaScript use
@@ -180,11 +180,11 @@
             ?>
                 <!-- Alert Card Structure (1-3 Columns Responsive) -->
                 <div
-                    class="alert-card bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 transition duration-300 hover:shadow-2xl hover:-translate-y-0.5 border border-gray-700"
+                    class="alert-card bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 transition duration-300 hover:shadow-2xl hover:-translate-y-0.5 border border-gray-700 flex flex-col min-h-[320px]"
                     data-alert-id="<?php echo $alert['id']; ?>"
                     data-alert-type="<?php echo strtolower($alert['type']); ?>"
                     data-is-safe="<?php echo $alert['is_safe'] ? 'true' : 'false'; ?>"
-                    style="border-top-color: <?php echo ($sev['bg'] === 'bg-red-600') ? '#ef4444' : (($sev['bg'] === 'bg-yellow-500') ? '#f59e0b' : '#3b82f6'); ?>;"
+                    style="border-top-color: <?php echo $sev['border']; ?>;"
                 >
                     <!-- Header: Icon, Title, and Severity Badge -->
                     <div class="flex justify-between items-start mb-4">
@@ -203,12 +203,14 @@
                     </div>
 
                     <!-- Description -->
-                    <p class="text-gray-300 mb-6 text-sm line-clamp-3">
-                        <?php echo htmlspecialchars($alert['description']); ?>
-                    </p>
+                    <div class="flex-grow">
+                        <p class="text-gray-300 mb-6 text-sm line-clamp-3">
+                            <?php echo htmlspecialchars($alert['description']); ?>
+                        </p>
+                    </div>
 
                     <!-- 2. Buttons Area -->
-                    <div class="flex justify-end space-x-3 border-t border-gray-700 pt-4">
+                    <div class="mt-auto flex justify-end space-x-3 border-t border-gray-700 pt-4">
                         <!-- View Details (Secondary) -->
                         <button class="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition duration-150">
                             View Details

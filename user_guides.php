@@ -28,6 +28,32 @@
         $completed_guides[] = $row['guide_id'];
     }
     $completed_stmt->close();
+    
+    // Get bookmarked guides
+    $bookmarked_query = "SELECT dg.guide_id, dg.title, dg.description 
+                         FROM user_bookmarked_guides ubg 
+                         JOIN disaster_guides dg ON ubg.guide_id = dg.guide_id 
+                         WHERE ubg.user_id = ? 
+                         ORDER BY ubg.bookmarked_at DESC";
+    $bookmarked_stmt = $conn->prepare($bookmarked_query);
+    $bookmarked_stmt->bind_param("i", $user_id);
+    $bookmarked_stmt->execute();
+    $bookmarked_result = $bookmarked_stmt->get_result();
+    $bookmarked_guides = array();
+    while ($row = $bookmarked_result->fetch_assoc()) {
+        $bookmarked_guides[] = $row;
+    }
+    $bookmarked_stmt->close();
+    
+    // Map guide IDs to page URLs and icons
+    $guide_info = [
+        1 => ['url' => 'user_guide_flood.php', 'icon' => 'fa-water', 'color' => 'text-blue-400'],
+        2 => ['url' => 'user_guide_fire.php', 'icon' => 'fa-fire', 'color' => 'text-orange-500'],
+        3 => ['url' => 'user_guide_earthquake.php', 'icon' => 'fa-house-crack', 'color' => 'text-yellow-500'],
+        4 => ['url' => 'user_guide_typhoon.php', 'icon' => 'fa-wind', 'color' => 'text-sky-400'],
+        5 => ['url' => 'user_guide_landslide.php', 'icon' => 'fa-hill-avalanche', 'color' => 'text-gray-500'],
+        6 => ['url' => 'user_guide_tsunami.php', 'icon' => 'fa-wave-square', 'color' => 'text-teal-400']
+    ];
 ?>
 
 <style>
@@ -113,6 +139,33 @@
                 </div>
                 <p class="text-sm text-gray-400">You've completed <?php echo $completed_count; ?> out of <?php echo $total_guides; ?> essential guides. Keep learning!</p>
             </div>
+            
+            <!-- Bookmarked Guides Section -->
+            <?php if (!empty($bookmarked_guides)): ?>
+            <div id="bookmarked-section" class="bg-gray-800 border-2 border-red-500/30 p-6 rounded-xl shadow-2xl mb-12 scroll-mt-24">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-white">
+                        <i class="fa-solid fa-bookmark text-red-500 mr-2"></i>
+                        Your Bookmarked Guides
+                    </h3>
+                    <span class="text-sm text-gray-400"><?php echo count($bookmarked_guides); ?> saved</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <?php foreach ($bookmarked_guides as $bookmark): 
+                        $info = $guide_info[$bookmark['guide_id']];
+                    ?>
+                    <a href="<?php echo $info['url']; ?>" class="flex items-start p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group">
+                        <i class="fa-solid <?php echo $info['icon']; ?> <?php echo $info['color']; ?> text-2xl mr-4 flex-shrink-0 mt-1"></i>
+                        <div class="flex-grow min-w-0">
+                            <h4 class="text-white font-bold text-lg mb-1 group-hover:text-red-400 transition-colors"><?php echo htmlspecialchars($bookmark['title']); ?></h4>
+                            <p class="text-gray-400 text-sm line-clamp-2"><?php echo htmlspecialchars($bookmark['description']); ?></p>
+                        </div>
+                        <i class="fa-solid fa-arrow-right text-red-500 ml-4 flex-shrink-0 mt-2 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
             
             <!-- Grid container for Main Content and Sidebar -->
             <div class="lg:grid lg:grid-cols-12 lg:gap-12">
@@ -278,9 +331,9 @@
                             <i class="fa-solid fa-bookmark text-red-500 mr-2"></i>
                             Save guides to review later
                         </p>
-                        <button class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition">
+                        <a href="#bookmarked-section" class="block w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-center font-semibold rounded-lg transition">
                             View Bookmarked Guides
-                        </button>
+                        </a>
                     </div>
                 </div>
                 
