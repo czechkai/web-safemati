@@ -139,7 +139,12 @@
     <!-- SIMULATED user_header.php END -->
 
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8" style="min-height: calc(100vh - 200px);">
-        <h1 class="text-4xl font-bold text-white mb-8 border-b border-red-500 pb-4">Real-Time Disaster Alerts</h1>
+        <div class="flex justify-between items-center mb-8 border-b border-red-500 pb-4">
+            <h1 class="text-4xl font-bold text-white">Real-Time Disaster Alerts</h1>
+            <a href="user_report_emergency.php" class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-lg font-bold transition transform hover:scale-105 inline-flex items-center shadow-lg">
+                <i class="fa-solid fa-plus mr-2"></i>Report Emergency
+            </a>
+        </div>
 
         <!-- 4. Filters Above Alert Grid -->
         <div class="mb-8 overflow-x-auto filter-scroll">

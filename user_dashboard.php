@@ -18,28 +18,37 @@
     // Consistent red/gray theme for all alerts
     $latest_alerts = [
         [
+            'id' => 1,
             'title' => 'Flood Watch in Barangay Central',
             'category' => 'Flood',
             'datetime' => 'Issued: Nov 19, 2025 - 3:14 PM',
             'description' => 'Heavy rains expected in low-lying areas. Residents near rivers advised to monitor water levels.',
+            'full_details' => 'Heavy rainfall has caused river levels to rise rapidly in Barangay Central. Local authorities are monitoring the situation closely. Residents in low-lying areas should prepare evacuation kits and be ready to move to higher ground if water levels continue to rise. Avoid crossing flooded roads and stay updated with official announcements.',
             'color_class' => 'border-l-red-600',
-            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50'
+            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50',
+            'is_safe' => false
         ],
         [
+            'id' => 2,
             'title' => 'Structural Fire near Public Market',
             'category' => 'Fire',
             'datetime' => 'Reported: Nov 19, 2025 - 1:05 PM',
             'description' => 'BFP teams are responding. Avoid the area near the public market for safety.',
+            'full_details' => 'A structural fire has been reported near the Public Market area. BFP (Bureau of Fire Protection) teams are currently on-site and actively working to contain the blaze. Residents and motorists are advised to avoid the area to allow emergency vehicles clear access. Keep windows closed if you live nearby to avoid smoke inhalation.',
             'color_class' => 'border-l-red-600',
-            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50'
+            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50',
+            'is_safe' => false
         ],
         [
+            'id' => 3,
             'title' => 'M 4.2 Earthquake Advisory',
             'category' => 'Earthquake',
             'datetime' => 'Recorded: Nov 18, 2025 - 10:00 AM',
             'description' => 'Minor tremor felt. No tsunami warning issued. Check buildings for cracks.',
+            'full_details' => 'A magnitude 4.2 earthquake was recorded at 10:00 AM. The tremor was felt across Mati City but no major damage has been reported. PHIVOLCS confirms no tsunami warning has been issued. Residents are advised to inspect buildings for structural cracks and report any damage to local authorities. Be prepared for possible aftershocks.',
             'color_class' => 'border-l-red-600',
-            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50'
+            'category_class' => 'bg-red-600/20 text-red-400 border-red-500/50',
+            'is_safe' => false
         ],
     ];
 
@@ -93,8 +102,8 @@
         <section class="lg:col-span-2 space-y-6">
             <h2 class="text-2xl font-bold text-white border-b border-red-700/50 pb-3 mb-6"><i class="fa-solid fa-bell-c text-red-500 mr-2"></i> Critical & Latest Alerts</h2>
 
-            <?php foreach ($latest_alerts as $alert): ?>
-            <div class="bg-gray-800 p-6 rounded-xl shadow-xl border-l-8 <?= $alert['color_class']; ?> transition duration-200 hover:bg-gray-700/50 hover:shadow-2xl flex flex-col min-h-[280px]">
+            <?php foreach ($latest_alerts as $index => $alert): ?>
+            <div id="alert-card-<?= $alert['id']; ?>" class="bg-gray-800 p-6 rounded-xl shadow-xl border-l-8 <?= $alert['color_class']; ?> transition duration-200 hover:bg-gray-700/50 hover:shadow-2xl flex flex-col min-h-[280px]" data-is-safe="<?= $alert['is_safe'] ? 'true' : 'false'; ?>">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-xl font-bold text-white"><?= $alert['title']; ?></h3>
                     <span class="text-xs font-bold px-3 py-1 rounded-full <?= $alert['category_class']; ?> border flex-shrink-0">
@@ -106,10 +115,10 @@
                     <p class="text-gray-300 mb-5 leading-relaxed"><?= $alert['description']; ?></p>
                 </div>
                 <div class="mt-auto flex gap-3">
-                    <a href="user_alert_detail.php?id=1" class="btn-gradient-sm inline-flex items-center text-sm font-bold px-4 py-2 rounded-lg transition duration-150 transform hover:scale-[1.03]">
+                    <button onclick="openAlertModal(<?= $alert['id']; ?>)" class="btn-gradient-sm inline-flex items-center text-sm font-bold px-4 py-2 rounded-lg transition duration-150 transform hover:scale-[1.03]">
                         <i class="fa-solid fa-circle-info mr-2"></i> View Details
-                    </a>
-                    <button class="bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition duration-150 inline-flex items-center">
+                    </button>
+                    <button onclick="markAsSafe(<?= $alert['id']; ?>)" id="safe-btn-<?= $alert['id']; ?>" class="safe-button bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition duration-150 inline-flex items-center">
                         <i class="fa-solid fa-shield-check mr-2"></i> Mark as Safe
                     </button>
                 </div>
@@ -138,9 +147,9 @@
                     <?php 
                         $actions = [
                             ['title' => 'View All Alerts', 'icon' => 'fa-list-ul', 'link' => 'user_alerts.php'],
+                            ['title' => 'Report Emergency', 'icon' => 'fa-triangle-exclamation', 'link' => 'user_report_emergency.php'],
                             ['title' => 'Emergency Hotlines', 'icon' => 'fa-phone-volume', 'link' => 'user_hotlines.php'],
                             ['title' => 'Disaster Guides', 'icon' => 'fa-book-open', 'link' => 'user_guides.php'],
-                            ['title' => 'Profile Settings', 'icon' => 'fa-user-gear', 'link' => 'user_profile.php'],
                         ];
                     ?>
                     
@@ -281,6 +290,59 @@
 
 </div>
 
+<!-- Alert Details Modal -->
+<div id="alertModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black bg-opacity-75 flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-red-500/30 transform transition-all">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-700">
+            <div class="flex items-center">
+                <span id="modalCategory" class="text-xs font-bold px-3 py-1 rounded-full bg-red-600/20 text-red-400 border border-red-500/50 mr-3">
+                    Category
+                </span>
+                <h2 id="modalTitle" class="text-2xl font-bold text-white">Alert Title</h2>
+            </div>
+            <button onclick="closeAlertModal()" class="text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+            <div class="flex items-center text-gray-400 text-sm">
+                <i class="fa-solid fa-clock mr-2"></i>
+                <span id="modalDatetime">Timestamp</span>
+            </div>
+            
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                <p id="modalDescription" class="text-gray-300 leading-relaxed">
+                    Alert description will appear here...
+                </p>
+            </div>
+            
+            <div class="bg-red-900/20 border-l-4 border-red-500 p-4 rounded">
+                <h3 class="text-white font-bold mb-2 flex items-center">
+                    <i class="fa-solid fa-circle-info text-red-500 mr-2"></i>
+                    Full Details
+                </h3>
+                <p id="modalFullDetails" class="text-gray-300 text-sm leading-relaxed">
+                    Full details will appear here...
+                </p>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex justify-end gap-3 p-6 border-t border-gray-700 bg-gray-900/50">
+            <button onclick="closeAlertModal()" class="px-5 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition">
+                Close
+            </button>
+            <button onclick="markAsSafeFromModal()" id="modalMarkSafeBtn" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition inline-flex items-center">
+                <i class="fa-solid fa-shield-check mr-2"></i>
+                Mark as Safe
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Custom CSS for button gradient -->
 <style>
     /* Large Button Gradient (used for Full Map, Report, etc.) */
@@ -307,7 +369,137 @@
     body {
         background-color: #121212; /* Ensure background is dark */
     }
+    
+    /* Safe button states */
+    .safe-button.is-safe {
+        background: #16a34a !important;
+        cursor: default;
+    }
+    .safe-button.is-safe:hover {
+        background: #15803d !important;
+    }
 </style>
+
+<script>
+// Alert data for modal
+const alertsData = <?php echo json_encode($latest_alerts); ?>;
+let currentAlertId = null;
+
+// Open alert modal
+function openAlertModal(alertId) {
+    const alert = alertsData.find(a => a.id === alertId);
+    if (!alert) return;
+    
+    currentAlertId = alertId;
+    
+    // Populate modal
+    document.getElementById('modalCategory').textContent = alert.category;
+    document.getElementById('modalTitle').textContent = alert.title;
+    document.getElementById('modalDatetime').textContent = alert.datetime;
+    document.getElementById('modalDescription').textContent = alert.description;
+    document.getElementById('modalFullDetails').textContent = alert.full_details;
+    
+    // Update mark as safe button state
+    const card = document.getElementById('alert-card-' + alertId);
+    const isSafe = card.getAttribute('data-is-safe') === 'true';
+    const modalBtn = document.getElementById('modalMarkSafeBtn');
+    
+    if (isSafe) {
+        modalBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> You\'re Safe';
+        modalBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        modalBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        modalBtn.style.cursor = 'default';
+    } else {
+        modalBtn.innerHTML = '<i class="fa-solid fa-shield-check mr-2"></i> Mark as Safe';
+        modalBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        modalBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        modalBtn.style.cursor = 'pointer';
+    }
+    
+    // Show modal
+    document.getElementById('alertModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close alert modal
+function closeAlertModal() {
+    document.getElementById('alertModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    currentAlertId = null;
+}
+
+// Mark as safe from modal
+function markAsSafeFromModal() {
+    if (currentAlertId) {
+        markAsSafe(currentAlertId);
+    }
+}
+
+// Mark as safe function
+function markAsSafe(alertId) {
+    const card = document.getElementById('alert-card-' + alertId);
+    const button = document.getElementById('safe-btn-' + alertId);
+    const isSafe = card.getAttribute('data-is-safe') === 'true';
+    
+    if (isSafe) return; // Already marked as safe
+    
+    // Update card state
+    card.setAttribute('data-is-safe', 'true');
+    
+    // Update button appearance
+    button.innerHTML = '<i class="fa-solid fa-check mr-2"></i> You\'re Safe';
+    button.classList.remove('bg-red-600', 'hover:bg-red-700');
+    button.classList.add('bg-green-600', 'hover:bg-green-700', 'is-safe');
+    button.style.cursor = 'default';
+    
+    // Update modal button if modal is open
+    if (currentAlertId === alertId) {
+        const modalBtn = document.getElementById('modalMarkSafeBtn');
+        modalBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> You\'re Safe';
+        modalBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        modalBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        modalBtn.style.cursor = 'default';
+    }
+    
+    // Show success toast
+    showToast('You marked yourself as safe from this alert!');
+    
+    // TODO: Send AJAX request to save state to database
+    // fetch('ajax/mark_alert_safe.php', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ alert_id: alertId })
+    // });
+}
+
+// Toast notification
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-24 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
+    toast.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> ${message}`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAlertModal();
+    }
+});
+
+// Close modal on outside click
+document.getElementById('alertModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAlertModal();
+    }
+});
+</script>
 
 <?php 
     // This loads the closing HTML tags and the footer markup.
